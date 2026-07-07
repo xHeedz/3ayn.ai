@@ -10,7 +10,7 @@ Globals:
     CodeUri: ThreeAynFunction
     Environment:
       Variables:
-        MODEL_ID: eu.amazon.nova-lite-v1:0
+        MODEL_ID: global.amazon.nova-2-lite-v1:0
         FACE_COLLECTION: threeayn-faces
         PROFILES_TABLE: !Ref ProfilesTable
         POLLY_VOICE: Hala
