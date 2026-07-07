@@ -1,0 +1,4 @@
+target/
+.aws-sam/
+*.zip
+dependency-reduced-pom.xml

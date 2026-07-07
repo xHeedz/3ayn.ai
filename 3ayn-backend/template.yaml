@@ -1,0 +1,168 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 3ayn backend - Ask (Bedrock Nova Lite), Read (Textract), Find (Rekognition), Who/Enroll (Rekognition Faces), Speak (Polly)
+
+Globals:
+  Function:
+    Runtime: java21
+    MemorySize: 1024
+    Timeout: 30
+    CodeUri: ThreeAynFunction
+    Environment:
+      Variables:
+        MODEL_ID: eu.amazon.nova-lite-v1:0
+        FACE_COLLECTION: threeayn-faces
+        PROFILES_TABLE: !Ref ProfilesTable
+        POLLY_VOICE: Hala
+        POLLY_ENGINE: neural
+
+Resources:
+  ThreeAynApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      Cors:
+        AllowOrigin: "'*'"
+        AllowMethods: "'POST,OPTIONS'"
+        AllowHeaders: "'Content-Type'"
+
+  ProfilesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ThreeAynProfiles
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: faceId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: faceId
+          KeyType: HASH
+
+  AskFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: com.threeayn.handlers.AskHandler::handleRequest
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: ['bedrock:InvokeModel', 'bedrock:Converse']
+              Resource: '*'
+      Events:
+        Ask:
+          Type: Api
+          Properties: {RestApiId: !Ref ThreeAynApi, Path: /ask, Method: post}
+
+  ReadFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: com.threeayn.handlers.ReadHandler::handleRequest
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: ['textract:DetectDocumentText']
+              Resource: '*'
+      Events:
+        Read:
+          Type: Api
+          Properties: {RestApiId: !Ref ThreeAynApi, Path: /read, Method: post}
+
+  FindFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: com.threeayn.handlers.FindHandler::handleRequest
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: ['rekognition:DetectLabels']
+              Resource: '*'
+      Events:
+        Find:
+          Type: Api
+          Properties: {RestApiId: !Ref ThreeAynApi, Path: /find, Method: post}
+
+  WhoFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: com.threeayn.handlers.WhoHandler::handleRequest
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: ['rekognition:SearchFacesByImage']
+              Resource: '*'
+            - Effect: Allow
+              Action: ['dynamodb:GetItem']
+              Resource: !GetAtt ProfilesTable.Arn
+      Events:
+        Who:
+          Type: Api
+          Properties: {RestApiId: !Ref ThreeAynApi, Path: /who, Method: post}
+
+  EnrollFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: com.threeayn.handlers.EnrollHandler::handleRequest
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: ['rekognition:CreateCollection', 'rekognition:IndexFaces']
+              Resource: '*'
+            - Effect: Allow
+              Action: ['dynamodb:PutItem']
+              Resource: !GetAtt ProfilesTable.Arn
+      Events:
+        Enroll:
+          Type: Api
+          Properties: {RestApiId: !Ref ThreeAynApi, Path: /enroll, Method: post}
+
+  SpeakFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: com.threeayn.handlers.SpeakHandler::handleRequest
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: ['polly:SynthesizeSpeech']
+              Resource: '*'
+      Events:
+        Speak:
+          Type: Api
+          Properties: {RestApiId: !Ref ThreeAynApi, Path: /speak, Method: post}
+
+  UsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ThreeAynUsers
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+
+  UserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: com.threeayn.handlers.UserHandler::handleRequest
+      Environment:
+        Variables:
+          USERS_TABLE: !Ref UsersTable
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: ['dynamodb:PutItem', 'dynamodb:GetItem']
+              Resource: !GetAtt UsersTable.Arn
+      Events:
+        CreateUser:
+          Type: Api
+          Properties: {RestApiId: !Ref ThreeAynApi, Path: /user, Method: post}
+        GetUser:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ThreeAynApi
+            Path: /user/{userId}
+            Method: get
+
+Outputs:
+  ApiBaseUrl:
+    Value: !Sub "https://${ThreeAynApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
