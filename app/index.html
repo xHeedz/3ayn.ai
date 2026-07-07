@@ -429,13 +429,53 @@ function speakLocal(text, useLang, prio = 5){
     if (prio <= currentPrio) return;
     speechSynthesis.cancel();
   }
-  const u = new SpeechSynthesisUtterance(text);
   const v = useLang === "ar" ? (arVoice || enVoice) : (enVoice || arVoice);
+  const u = new SpeechSynthesisUtterance(text);
   if (v) u.voice = v;
-  u.lang = useLang === "ar" ? "ar-SA" : "en-US";
+  u.lang = v ? v.lang : (useLang === "ar" ? "ar-SA" : "en-US");
   currentPrio = prio;
   u.onend = () => { currentPrio = 0; };
+  u.onerror = () => { currentPrio = 0; };
   speechSynthesis.speak(u);
+}
+
+/* ---- Polly event-audio cache: real Arabic voice for real-time events ---- */
+let eventAudio = {};        // key -> Audio (for current lang)
+let audioLang = null;
+let currentEvtAudio = null, currentEvtPrio = 0;
+
+async function preloadEventAudio(){
+  const base = $("endpoint").value.trim();
+  if (!base || audioLang === lang) return;
+  const target = lang;
+  const cache = {};
+  try{
+    for (const [key, e] of Object.entries(EVENTS)){
+      const r = await fetch(base + "/speak", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({text: target === "ar" ? e.ar : e.en, lang: target})
+      });
+      const d = await r.json();
+      if (d.audio) cache[key] = new Audio("data:audio/mp3;base64," + d.audio);
+    }
+    if (Object.keys(cache).length === Object.keys(EVENTS).length){
+      eventAudio = cache; audioLang = target;
+    }
+  }catch(e){ /* stay on browser TTS */ }
+}
+
+function playEvent(key, prio){
+  const a = eventAudio[key];
+  if (!a || audioLang !== lang) return false;
+  if (currentEvtAudio && !currentEvtAudio.paused){
+    if (prio <= currentEvtPrio) return true;   // suppressed by priority, still handled
+    currentEvtAudio.pause();
+  }
+  a.currentTime = 0;
+  currentEvtAudio = a; currentEvtPrio = prio;
+  a.onended = () => { currentEvtPrio = 0; };
+  a.play().catch(()=>{});
+  return true;
 }
 
 async function speakSmart(text){
@@ -464,7 +504,11 @@ function fire(key){
   $("narAr").textContent = e.ar;
   $("narEn").textContent = e.en + " · " + new Date().toLocaleTimeString([], {hour:"numeric", minute:"2-digit"});
 
-  speakLocal(lang === "ar" ? e.ar : e.en, lang, e.prio);
+  if (!playEvent(key, e.prio)){
+    // no Polly cache yet: browser voice, falling back to English text if no Arabic voice exists
+    const sayAr = lang === "ar" && arVoice;
+    speakLocal(sayAr ? e.ar : e.en, sayAr ? "ar" : "en", e.prio);
+  }
 
   const log = $("log");
   log.querySelector(".empty")?.remove();
@@ -687,13 +731,14 @@ $("testBtn").addEventListener("click", async () => {
       body: JSON.stringify({text: lang === "ar" ? "مرحباً، أنا عين" : "Hello, I am 3ayn", lang})
     });
     const d = await r.json();
-    if (d.audio){ new Audio("data:audio/mp3;base64," + d.audio).play(); msg.textContent = "Connected — you should hear the Polly voice"; msg.className = "statusMsg ok"; }
+    if (d.audio){ new Audio("data:audio/mp3;base64," + d.audio).play(); msg.textContent = "Connected — you should hear the Polly voice"; msg.className = "statusMsg ok"; preloadEventAudio(); }
     else throw new Error(d.message || "No audio returned");
   }catch(err){ msg.textContent = "Failed: " + err.message; msg.className = "statusMsg bad"; }
 });
 
 $("langSel").addEventListener("change", e => {
   lang = e.target.value;
+  preloadEventAudio();
   speakLocal(lang === "ar" ? "تم التحويل إلى العربية" : "Switched to English", lang, 5);
 });
 $("soundTgl").addEventListener("click", e => {
@@ -786,6 +831,7 @@ $("endpoint").addEventListener("change", async () => {
     if (r.ok && d.userId){ profile.userId = d.userId; storeSet("threeayn_profile", JSON.stringify(profile)); }
   } catch(e){}
 });
+$("endpoint").addEventListener("change", () => { audioLang = null; preloadEventAudio(); });
 
 $("enSendBtn").addEventListener("click", async () => {
   const msg = $("enMsg");
