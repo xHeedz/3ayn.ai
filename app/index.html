@@ -311,13 +311,7 @@
   <!-- ================= SETTINGS ================= -->
   <div class="screen" id="screen-settings">
     <h1>Settings</h1>
-
-    <div class="card">
-      <div class="label">BACKEND</div>
-      <input type="url" id="endpoint" placeholder="https://xxxx.execute-api.eu-west-2.amazonaws.com/Prod">
-      <button class="bigBtn secondary" id="testBtn">Test connection (calls /speak)</button>
-      <div class="statusMsg" id="connMsg"></div>
-    </div>
+    <input type="hidden" id="endpoint" value="https://pxv89q4lyk.execute-api.eu-west-2.amazonaws.com/Prod">
 
     <div class="card">
       <div class="label">VOICE & LANGUAGE</div>
@@ -764,31 +758,6 @@ $("readBtn").addEventListener("click", async () => {
 });
 
 /* ---------------- Settings ---------------- */
-$("testBtn").addEventListener("click", async () => {
-  const msg = $("connMsg");
-  const base = $("endpoint").value.trim();
-  if (!base){ msg.textContent = "Enter the API base URL first"; msg.className = "statusMsg bad"; return; }
-  msg.textContent = "Testing…"; msg.className = "statusMsg";
-  try{
-    const r = await fetch(base + "/speak", {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({text: lang === "ar" ? "مرحباً، أنا عين" : "Hello, I am 3ayn", lang})
-    });
-    const d = await r.json();
-    if (d.audio){
-      new Audio("data:audio/mp3;base64," + d.audio).play();
-      msg.textContent = "Connected — you should hear the Polly voice";
-      msg.className = "statusMsg ok";
-      storeSet("threeayn_endpoint", base);
-      usePolly = true;
-      $("pollyTgl").classList.add("on");
-      storeSet("threeayn_usePolly", "1");
-      preloadEventAudio();
-    }
-    else throw new Error(d.message || "No audio returned");
-  }catch(err){ msg.textContent = "Failed: " + err.message; msg.className = "statusMsg bad"; }
-});
-
 $("langSel").addEventListener("change", e => {
   lang = e.target.value;
   preloadEventAudio();
@@ -833,18 +802,21 @@ let profile = null;
 try { profile = JSON.parse(storeGet("threeayn_profile") || "null"); } catch(e){}
 
 /* ---- restore saved settings so nothing needs re-entering on every visit ---- */
+const DEFAULT_ENDPOINT = "https://pxv89q4lyk.execute-api.eu-west-2.amazonaws.com/Prod";
 (function restoreSettings(){
-  const savedEndpoint = storeGet("threeayn_endpoint");
-  if (savedEndpoint){ $("endpoint").value = savedEndpoint; }
-
   const savedMuted = storeGet("threeayn_muted");
   if (savedMuted === "1"){ muted = true; $("soundTgl").classList.remove("on"); }
 
+  // Polly voice defaults ON (backend is pre-configured); "0" only if the user turned it off
   const savedPolly = storeGet("threeayn_usePolly");
-  if (savedPolly === "1"){ usePolly = true; $("pollyTgl").classList.add("on"); }
+  usePolly = savedPolly !== "0";
+  $("pollyTgl").classList.toggle("on", usePolly);
 
   const savedDebug = storeGet("threeayn_debug");
   if (savedDebug === "1"){ $("debug").style.display = "block"; $("dbgTgl").classList.add("on"); }
+
+  // warm the Polly event-narration cache immediately — no Test connection required
+  setTimeout(preloadEventAudio, 500);
 })();
 
 function applyProfile(){
@@ -935,7 +907,7 @@ function updateWatchUI(){
   $("watchLinkBox").style.display = (watchActive && watchId) ? "block" : "none";
   if (watchActive && watchId){
     const base = $("endpoint").value.trim();
-    const viewerUrl = location.origin + location.pathname.replace(/index\.html$/, "") +
+    const viewerUrl = location.origin + location.pathname.replace(/[^/]*$/, "") +
       "viewer.html?w=" + encodeURIComponent(watchId) + "&api=" + encodeURIComponent(base);
     $("watchLink").value = viewerUrl;
   }
