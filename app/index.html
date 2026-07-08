@@ -160,6 +160,8 @@
   .screen.active{display:block}
   .settingRow{display:flex;justify-content:space-between;align-items:center;padding:6px 0}
   .settingRow label{font-weight:700;font-size:14.5px}
+  .tag{font-size:11px;font-weight:800;background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:2px 10px;margin-inline-start:8px;vertical-align:middle}
+  .tag.on{background:var(--green);color:#fff}
   .toggle{width:48px;height:28px;border-radius:999px;background:#D6D2EA;border:none;cursor:pointer;position:relative}
   .toggle::after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:left .15s}
   .toggle.on{background:var(--green)}
@@ -354,6 +356,29 @@
     </div>
 
     <div class="card">
+      <div class="label">TRUSTED VIEWER <span class="tag" id="watchStatus">Off</span></div>
+      <div class="settingRow">
+        <label>Allow a trusted person to watch</label>
+        <button class="toggle" id="watchTgl" aria-label="Toggle trusted viewer"></button>
+      </div>
+      <div id="watchLinkBox" style="display:none">
+        <input type="text" id="watchLink" readonly style="margin-top:8px">
+        <button class="bigBtn secondary" id="watchCopyBtn">Copy link</button>
+      </div>
+      <div class="hint">Off by default. Turning this on shares a still frame from your camera (refreshed every few seconds) with anyone who has the link — not full video, and not enabled unless you turn it on yourself. Turn off any time to revoke access instantly.</div>
+    </div>
+
+    <div class="card">
+      <div class="label">VOICE COMMANDS</div>
+      <div class="settingRow">
+        <label>Control 3ayn by voice</label>
+        <button class="toggle" id="voiceTgl" aria-label="Toggle voice commands"></button>
+      </div>
+      <div class="statusMsg" id="voiceMsg"></div>
+      <div class="hint">Say "اسأل" or "ask" to describe surroundings · "اقرأ" or "read" to read text · "دلني" or "find" to search · "من هذا" or "who" for face recognition · "شغل الكاميرا" / "start" and "أوقف" / "stop" for the camera. Needs microphone permission once.</div>
+    </div>
+
+    <div class="card">
       <div class="label">CAREGIVER — ENROLL A KNOWN PERSON</div>
       <input type="text" id="enName" placeholder="Name, e.g. ماريتا">
       <input type="text" id="enRel" placeholder="Relation, e.g. أختك / your sister">
@@ -425,10 +450,9 @@ loadVoices();
 
 function speakLocal(text, useLang, prio = 5){
   if (muted) return;
-  if (speechSynthesis.speaking){
-    if (prio <= currentPrio) return;
-    speechSynthesis.cancel();
-  }
+  const busyPrio = Math.max(currentPrio, currentEvtPrio, currentAnswerPrio);
+  if (busyPrio > 0 && prio <= busyPrio) return;
+  stopAllAudio();
   const v = useLang === "ar" ? (arVoice || enVoice) : (enVoice || arVoice);
   const u = new SpeechSynthesisUtterance(text);
   if (v) u.voice = v;
@@ -439,10 +463,10 @@ function speakLocal(text, useLang, prio = 5){
   speechSynthesis.speak(u);
 }
 
-/* ---- Polly event-audio cache: real Arabic voice for real-time events ---- */
 let eventAudio = {};        // key -> Audio (for current lang)
 let audioLang = null;
 let currentEvtAudio = null, currentEvtPrio = 0;
+let currentAnswerAudio = null, currentAnswerPrio = 0;   // Ask/Read/Find/Who Polly answers
 
 async function preloadEventAudio(){
   const base = $("endpoint").value.trim();
@@ -467,10 +491,9 @@ async function preloadEventAudio(){
 function playEvent(key, prio){
   const a = eventAudio[key];
   if (!a || audioLang !== lang) return false;
-  if (currentEvtAudio && !currentEvtAudio.paused){
-    if (prio <= currentEvtPrio) return true;   // suppressed by priority, still handled
-    currentEvtAudio.pause();
-  }
+  const busyPrio = Math.max(currentPrio, currentEvtPrio, currentAnswerPrio);
+  if (busyPrio > 0 && prio <= busyPrio) return true;   // suppressed by priority, still handled
+  stopAllAudio();
   a.currentTime = 0;
   currentEvtAudio = a; currentEvtPrio = prio;
   a.onended = () => { currentEvtPrio = 0; };
@@ -478,7 +501,19 @@ function playEvent(key, prio){
   return true;
 }
 
-async function speakSmart(text){
+/* One gate all speech goes through: only one of {browser TTS, cached event clip,
+   Ask/Read/Find answer audio} may play at a time — critical on mobile, where the
+   platform does NOT auto-duck speechSynthesis against <audio> like desktop Chrome does. */
+function stopAllAudio(){
+  speechSynthesis.cancel();
+  currentPrio = 0;
+  if (currentEvtAudio){ currentEvtAudio.pause(); currentEvtAudio.currentTime = 0; }
+  currentEvtPrio = 0;
+  if (currentAnswerAudio){ currentAnswerAudio.pause(); currentAnswerAudio.currentTime = 0; }
+  currentAnswerPrio = 0;
+}
+
+async function speakSmart(text, prio = 5){
   if (muted) return;
   const base = $("endpoint").value.trim();
   if (usePolly && base){
@@ -488,10 +523,19 @@ async function speakSmart(text){
         body: JSON.stringify({text, lang})
       });
       const d = await r.json();
-      if (d.audio){ new Audio("data:audio/mp3;base64," + d.audio).play(); return; }
+      if (d.audio){
+        const busyPrio = Math.max(currentPrio, currentEvtPrio, currentAnswerPrio);
+        if (busyPrio > 0 && prio <= busyPrio) return;   // something more urgent is already speaking
+        stopAllAudio();
+        const audio = new Audio("data:audio/mp3;base64," + d.audio);
+        currentAnswerAudio = audio; currentAnswerPrio = prio;
+        audio.onended = () => { currentAnswerPrio = 0; };
+        audio.play().catch(()=>{});
+        return;
+      }
     }catch(e){ /* fall through to local voice */ }
   }
-  speakLocal(text, lang);
+  speakLocal(text, lang, prio);
 }
 
 /* ---------------- event engine ---------------- */
@@ -731,7 +775,16 @@ $("testBtn").addEventListener("click", async () => {
       body: JSON.stringify({text: lang === "ar" ? "مرحباً، أنا عين" : "Hello, I am 3ayn", lang})
     });
     const d = await r.json();
-    if (d.audio){ new Audio("data:audio/mp3;base64," + d.audio).play(); msg.textContent = "Connected — you should hear the Polly voice"; msg.className = "statusMsg ok"; preloadEventAudio(); }
+    if (d.audio){
+      new Audio("data:audio/mp3;base64," + d.audio).play();
+      msg.textContent = "Connected — you should hear the Polly voice";
+      msg.className = "statusMsg ok";
+      storeSet("threeayn_endpoint", base);
+      usePolly = true;
+      $("pollyTgl").classList.add("on");
+      storeSet("threeayn_usePolly", "1");
+      preloadEventAudio();
+    }
     else throw new Error(d.message || "No audio returned");
   }catch(err){ msg.textContent = "Failed: " + err.message; msg.className = "statusMsg bad"; }
 });
@@ -744,16 +797,19 @@ $("langSel").addEventListener("change", e => {
 $("soundTgl").addEventListener("click", e => {
   muted = !muted;
   e.currentTarget.classList.toggle("on", !muted);
+  storeSet("threeayn_muted", muted ? "1" : "0");
   if (muted) speechSynthesis.cancel();
 });
 $("pollyTgl").addEventListener("click", e => {
   usePolly = !usePolly;
   e.currentTarget.classList.toggle("on", usePolly);
+  storeSet("threeayn_usePolly", usePolly ? "1" : "0");
 });
 $("dbgTgl").addEventListener("click", e => {
   const on = $("debug").style.display !== "block";
   $("debug").style.display = on ? "block" : "none";
   e.currentTarget.classList.toggle("on", on);
+  storeSet("threeayn_debug", on ? "1" : "0");
 });
 $("cfgApproach").addEventListener("change", e => { const v = parseFloat(e.target.value); if (v > 1) CFG.approachRatio = v; });
 $("cfgWrist").addEventListener("change", e => { const v = parseFloat(e.target.value); if (v > 0) CFG.wristZDelta = v; });
@@ -775,6 +831,21 @@ function storeDel(k){ try { localStorage.removeItem(k); } catch(e){ delete windo
 
 let profile = null;
 try { profile = JSON.parse(storeGet("threeayn_profile") || "null"); } catch(e){}
+
+/* ---- restore saved settings so nothing needs re-entering on every visit ---- */
+(function restoreSettings(){
+  const savedEndpoint = storeGet("threeayn_endpoint");
+  if (savedEndpoint){ $("endpoint").value = savedEndpoint; }
+
+  const savedMuted = storeGet("threeayn_muted");
+  if (savedMuted === "1"){ muted = true; $("soundTgl").classList.remove("on"); }
+
+  const savedPolly = storeGet("threeayn_usePolly");
+  if (savedPolly === "1"){ usePolly = true; $("pollyTgl").classList.add("on"); }
+
+  const savedDebug = storeGet("threeayn_debug");
+  if (savedDebug === "1"){ $("debug").style.display = "block"; $("dbgTgl").classList.add("on"); }
+})();
 
 function applyProfile(){
   if (!profile) return;
@@ -831,7 +902,7 @@ $("endpoint").addEventListener("change", async () => {
     if (r.ok && d.userId){ profile.userId = d.userId; storeSet("threeayn_profile", JSON.stringify(profile)); }
   } catch(e){}
 });
-$("endpoint").addEventListener("change", () => { audioLang = null; preloadEventAudio(); });
+$("endpoint").addEventListener("change", () => { audioLang = null; storeSet("threeayn_endpoint", $("endpoint").value.trim()); preloadEventAudio(); });
 
 $("enSendBtn").addEventListener("click", async () => {
   const msg = $("enMsg");
@@ -850,6 +921,158 @@ $("enSendBtn").addEventListener("click", async () => {
     msg.textContent = d.text; msg.className = "statusMsg ok";
     $("enSendBtn").disabled = true; enrollImage = null;
   }catch(err){ msg.textContent = "Failed: " + err.message; msg.className = "statusMsg bad"; }
+});
+
+/* ---------------- Trusted Viewer (consent-gated snapshot sharing) ---------------- */
+let watchId = storeGet("threeayn_watchId") || null;
+let watchActive = storeGet("threeayn_watchActive") === "1";
+let watchTimer = null;
+
+function updateWatchUI(){
+  $("watchTgl").classList.toggle("on", watchActive);
+  $("watchStatus").textContent = watchActive ? "On" : "Off";
+  $("watchStatus").classList.toggle("on", watchActive);
+  $("watchLinkBox").style.display = (watchActive && watchId) ? "block" : "none";
+  if (watchActive && watchId){
+    const base = $("endpoint").value.trim();
+    const viewerUrl = location.origin + location.pathname.replace(/index\.html$/, "") +
+      "viewer.html?w=" + encodeURIComponent(watchId) + "&api=" + encodeURIComponent(base);
+    $("watchLink").value = viewerUrl;
+  }
+}
+updateWatchUI();
+
+function startFrameLoop(){
+  if (watchTimer) return;
+  watchTimer = setInterval(async () => {
+    if (!watchActive || !watchId || !running) return;
+    const base = $("endpoint").value.trim();
+    if (!base) return;
+    const img = captureBase64();
+    if (!img) return;
+    try{
+      await fetch(base + "/watch/frame", {
+        method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({watchId, image: img})
+      });
+    }catch(e){ /* skip this tick, try again next interval */ }
+  }, 3000);
+}
+function stopFrameLoop(){ if (watchTimer){ clearInterval(watchTimer); watchTimer = null; } }
+if (watchActive) startFrameLoop();
+
+$("watchTgl").addEventListener("click", async () => {
+  const base = $("endpoint").value.trim();
+  if (!base){ alert(lang === "ar" ? "أدخلي رابط الـ backend في الأعلى أولاً" : "Set the backend URL above first"); return; }
+
+  if (!watchActive){
+    try{
+      const r = await fetch(base + "/watch/start", {
+        method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({userId: profile?.userId || ""})
+      });
+      const d = await r.json();
+      if (!r.ok || !d.watchId) throw new Error(d.message || "Failed to start");
+      watchId = d.watchId; watchActive = true;
+      storeSet("threeayn_watchId", watchId); storeSet("threeayn_watchActive", "1");
+      updateWatchUI(); startFrameLoop();
+    }catch(err){ alert("Failed: " + err.message); }
+  } else {
+    try{
+      await fetch(base + "/watch/stop", {
+        method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({watchId})
+      });
+    }catch(e){}
+    watchActive = false;
+    storeSet("threeayn_watchActive", "0");
+    stopFrameLoop();
+    updateWatchUI();
+  }
+});
+
+$("watchCopyBtn").addEventListener("click", () => {
+  $("watchLink").select();
+  navigator.clipboard?.writeText($("watchLink").value).catch(()=>{});
+  $("watchCopyBtn").textContent = lang === "ar" ? "تم النسخ ✓" : "Copied ✓";
+  setTimeout(() => { $("watchCopyBtn").textContent = "Copy link"; }, 1500);
+});
+
+/* ---------------- Voice Commands ---------------- */
+const VOICE_COMMANDS = [
+  { keys: ["اسأل","صف","وصف","ask","describe"],      action: () => { show("ask"); $("askBtn").click(); } },
+  { keys: ["اقرأ","read"],                             action: () => { show("read"); $("readBtn").click(); } },
+  { keys: ["دلني","لاقي","ابحث","find","where"],       action: () => { show("find"); $("findBtn").click(); } },
+  { keys: ["من هذا","من أمامي","who","who is"],        action: () => { show("ask"); $("whoBtn").click(); } },
+  { keys: ["شغل الكاميرا","شغل","start","turn on"],    action: () => { if (!running) $("powerBtn").click(); } },
+  { keys: ["أوقف","وقف الكاميرا","stop","turn off"],   action: () => { if (running) $("powerBtn").click(); } },
+  { keys: ["الرئيسية","الصفحة الرئيسية","home"],       action: () => show("home") },
+  { keys: ["الإعدادات","settings"],                    action: () => show("settings") },
+];
+
+let recognition = null;
+let voiceEnabled = storeGet("threeayn_voiceEnabled") === "1";
+let voiceRestarting = false;
+
+function matchCommand(transcript){
+  const t = transcript.trim().toLowerCase();
+  for (const cmd of VOICE_COMMANDS){
+    if (cmd.keys.some(k => t.includes(k.toLowerCase()))) return cmd;
+  }
+  return null;
+}
+
+function setupRecognition(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return null;
+  const r = new SR();
+  r.continuous = true;
+  r.interimResults = false;
+  r.lang = lang === "ar" ? "ar-SA" : "en-US";
+  r.onresult = (e) => {
+    const transcript = e.results[e.results.length - 1][0].transcript;
+    const cmd = matchCommand(transcript);
+    if (cmd) cmd.action();
+  };
+  r.onerror = () => { /* mic hiccup — restart handles recovery */ };
+  r.onend = () => {
+    if (voiceEnabled && !voiceRestarting){
+      voiceRestarting = true;
+      setTimeout(() => { voiceRestarting = false; try { r.start(); } catch(e){} }, 300);
+    }
+  };
+  return r;
+}
+
+function updateVoiceUI(){
+  $("voiceTgl").classList.toggle("on", voiceEnabled);
+  const msg = $("voiceMsg");
+  if (!window.SpeechRecognition && !window.webkitSpeechRecognition){
+    msg.textContent = lang === "ar" ? "المتصفح لا يدعم أوامر صوتية" : "This browser doesn't support voice commands";
+    msg.className = "statusMsg bad";
+    $("voiceTgl").disabled = true;
+  } else {
+    msg.textContent = voiceEnabled ? (lang === "ar" ? "الاستماع للأوامر مفعّل" : "Listening for commands") : "";
+    msg.className = "statusMsg ok";
+  }
+}
+updateVoiceUI();
+
+if (voiceEnabled){
+  recognition = setupRecognition();
+  try { recognition?.start(); } catch(e){}
+}
+
+$("voiceTgl").addEventListener("click", () => {
+  voiceEnabled = !voiceEnabled;
+  storeSet("threeayn_voiceEnabled", voiceEnabled ? "1" : "0");
+  if (voiceEnabled){
+    recognition = recognition || setupRecognition();
+    try { recognition?.start(); } catch(e){}
+  } else {
+    try { recognition?.stop(); } catch(e){}
+  }
+  updateVoiceUI();
 });
 </script>
 </body>

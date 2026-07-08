@@ -2,3 +2,6 @@ target/
 .aws-sam/
 *.zip
 dependency-reduced-pom.xml
+
+3ayn-backend old/
+files old/

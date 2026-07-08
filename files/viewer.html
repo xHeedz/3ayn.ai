@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3ayn — Trusted Viewer</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#1A1523; --card:#241D33; --accent:#8B85F0; --dim:#9A96A8; --green:#18A957; --red:#E5484D; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:#fff;font-family:'Plus Jakarta Sans',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px}
+  h1{font-size:20px;margin:10px 0 4px}
+  .sub{color:var(--dim);font-size:13px;margin-bottom:18px;text-align:center}
+  .frame{width:100%;max-width:460px;aspect-ratio:4/3;background:#000;border-radius:16px;overflow:hidden;position:relative;box-shadow:0 12px 40px rgba(0,0,0,.4)}
+  .frame img{width:100%;height:100%;object-fit:cover;display:block}
+  .empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:14px;text-align:center;padding:20px}
+  .status{margin-top:14px;font-size:13px;color:var(--dim);display:flex;align-items:center;gap:8px}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--green)}
+  .dot.stale{background:#E8930C}
+  .dot.off{background:var(--red)}
+  .hint{margin-top:22px;color:var(--dim);font-size:12px;text-align:center;max-width:400px;line-height:1.6}
+</style>
+</head>
+<body>
+  <h1>3ayn — Trusted Viewer</h1>
+  <div class="sub">You're seeing a still frame from their camera, refreshed every few seconds.</div>
+  <div class="frame">
+    <img id="img" style="display:none">
+    <div class="empty" id="empty">Waiting for the first frame…</div>
+  </div>
+  <div class="status"><span class="dot" id="dot"></span><span id="statusText">Connecting…</span></div>
+  <div class="hint">This is not live video — it's a periodic snapshot the wearer chose to share, and they can revoke access at any time from their app.</div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const watchId = params.get("w");
+const api = params.get("api");
+const img = document.getElementById("img");
+const empty = document.getElementById("empty");
+const dot = document.getElementById("dot");
+const statusText = document.getElementById("statusText");
+
+if (!watchId || !api){
+  statusText.textContent = "Missing link parameters — ask for a fresh link.";
+  dot.className = "dot off";
+} else {
+  let lastUpdate = 0;
+  async function poll(){
+    try{
+      const r = await fetch(api + "/watch/" + encodeURIComponent(watchId));
+      const d = await r.json();
+      if (!r.ok || !d.active){
+        statusText.textContent = "Sharing has been turned off.";
+        dot.className = "dot off";
+        return;
+      }
+      if (d.image){
+        img.src = "data:image/jpeg;base64," + d.image;
+        img.style.display = "block";
+        empty.style.display = "none";
+        lastUpdate = Date.now();
+        dot.className = "dot";
+        statusText.textContent = "Live · updated just now";
+      }
+    }catch(e){
+      dot.className = "dot stale";
+      statusText.textContent = "Connection trouble — retrying…";
+    }
+  }
+  poll();
+  setInterval(poll, 3000);
+  setInterval(() => {
+    if (!lastUpdate) return;
+    const secs = Math.round((Date.now() - lastUpdate) / 1000);
+    if (secs > 4){
+      dot.className = secs > 15 ? "dot stale" : "dot";
+      statusText.textContent = "Updated " + secs + "s ago";
+    }
+  }, 1000);
+}
+</script>
+</body>
+</html>
