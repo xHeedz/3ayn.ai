@@ -29,13 +29,6 @@ Existing accessibility apps are reactive and object-focused: the user taps, the 
 
 Plus three on-demand modes: **Ask** (describe my surroundings), **Read** (read the text in front of me), and **Find** (where is my bottle? → *"إلى يسارك"*).
 
-## Screenshots
-
-<p align="center">
-  <img src="docs/screenshots/home-live.png" width="330" alt="Home screen with live detection and event log">
-  &nbsp;&nbsp;
-  <img src="docs/screenshots/ask.png" width="330" alt="Ask screen">
-</p>
 
 ## The core architecture decision
 
