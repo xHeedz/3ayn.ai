@@ -266,6 +266,7 @@
 
     <div class="wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
     <div class="listenTxt" id="listenTxt">Not listening yet</div>
+    <div class="listenTxt" style="font-size:10px;opacity:.6">build v-MIC2</div>
   </div>
 
   <!-- ================= ASK ================= -->
@@ -385,6 +386,7 @@
 </div>
 
 <script type="module">
+console.log("3ayn build v-MIC2");
 import { FilesetResolver, PoseLandmarker } from
   "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
 
@@ -1031,7 +1033,7 @@ function setupRecognition(){
   r.onend = () => {
     if (voiceEnabled && !voiceRestarting){
       voiceRestarting = true;
-      setTimeout(() => { voiceRestarting = false; if (micGranted) try { r.start(); } catch(e){} }, 300);
+      setTimeout(() => { voiceRestarting = false; if (micGranted && window.__micStream) try { r.start(); } catch(e){} }, 300);
     }
   };
   return r;
@@ -1054,11 +1056,14 @@ updateVoiceUI();
 if (voiceEnabled){
   // saved-on state from a previous session: verify the grant silently before starting,
   // so page load never triggers a permission popup
-  navigator.permissions?.query({ name: "microphone" }).then(p => {
+  navigator.permissions?.query({ name: "microphone" }).then(async p => {
     if (p.state === "granted"){
-      micGranted = true;
-      recognition = recognition || setupRecognition();
-      try { recognition?.start(); } catch(e){}
+      try{
+        window.__micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        micGranted = true;
+        recognition = recognition || setupRecognition();
+        try { recognition?.start(); } catch(e){}
+      }catch(e){ voiceEnabled = false; updateVoiceUI(); }
     } else {
       voiceEnabled = false; updateVoiceUI();
     }
