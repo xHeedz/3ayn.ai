@@ -362,7 +362,7 @@
         </div>
         <div class="stat-item">
           <span class="stat-label">Interval</span>
-          <span class="stat-value" id="pollInterval">3s</span>
+          <span class="stat-value" id="pollInterval">1s</span>
         </div>
         <div class="stat-item">
           <span class="stat-label">Quality</span>
@@ -381,7 +381,7 @@
         </div>
         <div class="setting-item">
           <label for="refreshRate">Interval:</label>
-          <input type="number" id="refreshRate" min="1" max="10" value="3">
+          <input type="number" id="refreshRate" min="1" max="10" value="1">
           <span style="color:var(--dim)">s</span>
         </div>
         <div class="setting-item">
@@ -422,7 +422,7 @@ const soundAlertCheckbox = document.getElementById("soundAlert");
 
 let lastUpdate = 0;
 let frameCount = 0;
-let pollInterval = 3000;
+let pollInterval = 1000;
 let pollTimer = null;
 let errorCount = 0;
 let isActive = true;
