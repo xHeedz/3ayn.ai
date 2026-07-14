@@ -6,30 +6,401 @@
 <title>3ayn — Trusted Viewer</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  :root{ --bg:#1A1523; --card:#241D33; --accent:#8B85F0; --dim:#9A96A8; --green:#18A957; --red:#E5484D; }
+  :root{ 
+    --bg:#1A1523; 
+    --card:#241D33; 
+    --accent:#8B85F0; 
+    --dim:#9A96A8; 
+    --green:#18A957; 
+    --red:#E5484D; 
+    --orange:#E8930C;
+    --border:#3A3548;
+  }
+  
   *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--bg);color:#fff;font-family:'Plus Jakarta Sans',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px}
-  h1{font-size:20px;margin:10px 0 4px}
-  .sub{color:var(--dim);font-size:13px;margin-bottom:18px;text-align:center}
-  .frame{width:100%;max-width:460px;aspect-ratio:4/3;background:#000;border-radius:16px;overflow:hidden;position:relative;box-shadow:0 12px 40px rgba(0,0,0,.4)}
-  .frame img{width:100%;height:100%;object-fit:cover;display:block}
-  .empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:14px;text-align:center;padding:20px}
-  .status{margin-top:14px;font-size:13px;color:var(--dim);display:flex;align-items:center;gap:8px}
-  .dot{width:9px;height:9px;border-radius:50%;background:var(--green)}
-  .dot.stale{background:#E8930C}
-  .dot.off{background:var(--red)}
-  .hint{margin-top:22px;color:var(--dim);font-size:12px;text-align:center;max-width:400px;line-height:1.6}
+  
+  body{
+    background:var(--bg);
+    color:#fff;
+    font-family:'Plus Jakarta Sans',sans-serif;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    padding:20px;
+  }
+  
+  .header{
+    text-align:center;
+    margin-bottom:24px;
+  }
+  
+  h1{font-size:20px;margin:0 0 4px}
+  
+  .sub{color:var(--dim);font-size:13px;margin-bottom:8px;text-align:center}
+  
+  .privacy-notice{
+    background:rgba(139,133,240,0.1);
+    border:1px solid var(--accent);
+    border-radius:8px;
+    padding:12px;
+    margin-bottom:16px;
+    font-size:12px;
+    color:var(--accent);
+    text-align:center;
+    max-width:500px;
+    margin-left:auto;
+    margin-right:auto;
+  }
+  
+  .privacy-notice strong{
+    display:block;
+    margin-bottom:4px;
+  }
+  
+  .container{
+    display:grid;
+    grid-template-columns:1fr 280px;
+    gap:20px;
+    max-width:800px;
+    width:100%;
+    margin:0 auto;
+  }
+  
+  .main-section{
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+  }
+  
+  .frame-wrapper{
+    width:100%;
+    aspect-ratio:4/3;
+    background:#000;
+    border-radius:16px;
+    overflow:hidden;
+    position:relative;
+    box-shadow:0 12px 40px rgba(0,0,0,.4);
+  }
+  
+  .frame-wrapper img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+  }
+  
+  .empty{
+    position:absolute;
+    inset:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    color:var(--dim);
+    font-size:14px;
+    text-align:center;
+    padding:20px;
+    gap:12px;
+  }
+  
+  .spinner{
+    width:32px;
+    height:32px;
+    border:2px solid rgba(255,255,255,0.1);
+    border-top-color:var(--accent);
+    border-radius:50%;
+    animation:spin 1s linear infinite;
+  }
+  
+  @keyframes spin{to{transform:rotate(360deg)}}
+  
+  .status-bar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:12px 16px;
+    background:var(--card);
+    border-radius:12px;
+    border:1px solid var(--border);
+    font-size:13px;
+  }
+  
+  .status-left{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  
+  .dot{
+    width:9px;
+    height:9px;
+    border-radius:50%;
+    background:var(--green);
+    animation:pulse 2s infinite;
+  }
+  
+  @keyframes pulse{
+    0%,100%{opacity:1}
+    50%{opacity:0.5}
+  }
+  
+  .dot.stale{
+    background:var(--orange);
+    animation:none;
+    opacity:0.7;
+  }
+  
+  .dot.off{
+    background:var(--red);
+    animation:none;
+  }
+  
+  .hint{
+    margin-top:12px;
+    color:var(--dim);
+    font-size:12px;
+    text-align:center;
+    line-height:1.5;
+  }
+  
+  /* Sidebar */
+  .sidebar{
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+  }
+  
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:16px;
+  }
+  
+  .card h3{
+    font-size:12px;
+    font-weight:600;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin-bottom:12px;
+    letter-spacing:0.5px;
+  }
+  
+  .stat-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:8px 0;
+    border-bottom:1px solid var(--border);
+    font-size:12px;
+  }
+  
+  .stat-item:last-child{
+    border-bottom:none;
+  }
+  
+  .stat-label{
+    color:var(--dim);
+  }
+  
+  .stat-value{
+    font-weight:600;
+    color:#fff;
+  }
+  
+  .stat-value.good{color:var(--green)}
+  .stat-value.warn{color:var(--orange)}
+  .stat-value.bad{color:var(--red)}
+  
+  .setting-item{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 0;
+    font-size:12px;
+  }
+  
+  .setting-item label{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    cursor:pointer;
+    flex:1;
+  }
+  
+  .setting-item input[type="checkbox"]{
+    width:16px;
+    height:16px;
+    cursor:pointer;
+    accent-color:var(--accent);
+  }
+  
+  .setting-item input[type="number"]{
+    background:#1A1523;
+    border:1px solid var(--border);
+    color:#fff;
+    padding:4px 6px;
+    border-radius:4px;
+    width:45px;
+    font-size:12px;
+    font-family:inherit;
+  }
+  
+  .alert-item{
+    background:rgba(229,72,77,0.1);
+    border-left:2px solid var(--red);
+    padding:8px;
+    border-radius:4px;
+    margin-bottom:8px;
+    font-size:11px;
+    color:#ffa0a5;
+  }
+  
+  .alert-item.info{
+    background:rgba(139,133,240,0.1);
+    border-left-color:var(--accent);
+    color:#9d95ff;
+  }
+  
+  .alerts-list{
+    max-height:150px;
+    overflow-y:auto;
+    font-size:11px;
+  }
+  
+  .alerts-list::-webkit-scrollbar{width:6px}
+  .alerts-list::-webkit-scrollbar-track{background:transparent}
+  .alerts-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+  
+  /* Responsive */
+  @media(max-width:768px){
+    .container{
+      grid-template-columns:1fr;
+    }
+    
+    .sidebar{
+      flex-direction:row;
+      overflow-x:auto;
+      gap:12px;
+    }
+    
+    .card{
+      flex:0 0 auto;
+      width:200px;
+    }
+  }
+  
+  @media(max-width:480px){
+    body{padding:12px}
+    
+    h1{font-size:18px}
+    
+    .frame-wrapper{
+      aspect-ratio:16/12;
+    }
+    
+    .container{
+      gap:12px;
+    }
+    
+    .status-bar{
+      flex-direction:column;
+      gap:8px;
+      text-align:center;
+    }
+    
+    .status-left{
+      justify-content:center;
+    }
+  }
 </style>
 </head>
 <body>
-  <h1>3ayn — Trusted Viewer</h1>
-  <div class="sub">You're seeing a still frame from their camera, refreshed every few seconds.</div>
-  <div class="frame">
-    <img id="img" style="display:none">
-    <div class="empty" id="empty">Waiting for the first frame…</div>
+  <div class="header">
+    <h1>3ayn — Trusted Viewer</h1>
+    <div class="sub">Live frame from their camera, updated every few seconds.</div>
+    <div class="privacy-notice">
+      <strong>⚠️ Privacy Reminder</strong>
+      The wearer can see in their app that you're watching. They can revoke access anytime.
+    </div>
   </div>
-  <div class="status"><span class="dot" id="dot"></span><span id="statusText">Connecting…</span></div>
-  <div class="hint">This is not live video — it's a periodic snapshot the wearer chose to share, and they can revoke access at any time from their app.</div>
+  
+  <div class="container">
+    <div class="main-section">
+      <div class="frame-wrapper">
+        <img id="img" style="display:none">
+        <div class="empty" id="empty">
+          <div class="spinner"></div>
+          <div>Waiting for the first frame…</div>
+        </div>
+      </div>
+      
+      <div class="status-bar">
+        <div class="status-left">
+          <span class="dot" id="dot"></span>
+          <span id="statusText">Connecting…</span>
+        </div>
+        <span id="timeAgo" style="color:var(--dim)">—</span>
+      </div>
+      
+      <div class="hint">
+        This is not live video — it's a periodic snapshot they chose to share. They can revoke access at any time from Settings.
+      </div>
+    </div>
+    
+    <div class="sidebar">
+      <!-- Status Card -->
+      <div class="card">
+        <h3>📊 Status</h3>
+        <div class="stat-item">
+          <span class="stat-label">Session</span>
+          <span class="stat-value good" id="sessionStatus">Active</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Frames</span>
+          <span class="stat-value" id="frameCount">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Interval</span>
+          <span class="stat-value" id="pollInterval">3s</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Quality</span>
+          <span class="stat-value good" id="quality">Good</span>
+        </div>
+      </div>
+      
+      <!-- Settings Card -->
+      <div class="card">
+        <h3>⚙️ Settings</h3>
+        <div class="setting-item">
+          <label>
+            <input type="checkbox" id="autoRefresh" checked>
+            <span>Auto refresh</span>
+          </label>
+        </div>
+        <div class="setting-item">
+          <label for="refreshRate">Interval:</label>
+          <input type="number" id="refreshRate" min="1" max="10" value="3">
+          <span style="color:var(--dim)">s</span>
+        </div>
+        <div class="setting-item">
+          <label>
+            <input type="checkbox" id="soundAlert">
+            <span>Sound alert</span>
+          </label>
+        </div>
+      </div>
+      
+      <!-- Alerts Card -->
+      <div class="card">
+        <h3>🔔 Activity</h3>
+        <div class="alerts-list" id="alertsList">
+          <div class="alert-item info">Session started</div>
+        </div>
+      </div>
+    </div>
+  </div>
 
 <script>
 const params = new URLSearchParams(location.search);
@@ -39,44 +410,149 @@ const img = document.getElementById("img");
 const empty = document.getElementById("empty");
 const dot = document.getElementById("dot");
 const statusText = document.getElementById("statusText");
+const timeAgo = document.getElementById("timeAgo");
+const frameCountEl = document.getElementById("frameCount");
+const pollIntervalEl = document.getElementById("pollInterval");
+const sessionStatusEl = document.getElementById("sessionStatus");
+const qualityEl = document.getElementById("quality");
+const alertsList = document.getElementById("alertsList");
+const autoRefreshCheckbox = document.getElementById("autoRefresh");
+const refreshRateInput = document.getElementById("refreshRate");
+const soundAlertCheckbox = document.getElementById("soundAlert");
+
+let lastUpdate = 0;
+let frameCount = 0;
+let pollInterval = 3000;
+let pollTimer = null;
+let errorCount = 0;
+let isActive = true;
+
+function addAlert(message, type = 'info'){
+  const alert = document.createElement('div');
+  alert.className = `alert-item ${type}`;
+  const time = new Date().toLocaleTimeString();
+  alert.textContent = `${time}: ${message}`;
+  alertsList.insertBefore(alert, alertsList.firstChild);
+  while(alertsList.children.length > 8) alertsList.removeChild(alertsList.lastChild);
+}
+
+function playSound(){
+  if(!soundAlertCheckbox.checked) return;
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.frequency.value = 800;
+  gain.gain.setValueAtTime(0.3, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+  osc.start(ctx.currentTime);
+  osc.stop(ctx.currentTime + 0.1);
+}
+
+function updateTimeAgo(){
+  if(!lastUpdate) return;
+  const secs = Math.round((Date.now() - lastUpdate) / 1000);
+  if(secs < 60){
+    timeAgo.textContent = secs + 's ago';
+  } else {
+    const mins = Math.round(secs / 60);
+    timeAgo.textContent = mins + 'm ago';
+  }
+  
+  if(secs > 10){
+    dot.className = 'dot stale';
+    qualityEl.textContent = 'Slow';
+    qualityEl.className = 'stat-value warn';
+  } else if(secs > 5){
+    dot.className = 'dot stale';
+    qualityEl.textContent = 'Fair';
+    qualityEl.className = 'stat-value warn';
+  } else {
+    dot.className = 'dot';
+    qualityEl.textContent = 'Good';
+    qualityEl.className = 'stat-value good';
+  }
+}
 
 if (!watchId || !api){
-  statusText.textContent = "Missing link parameters — ask for a fresh link.";
+  statusText.textContent = "Missing parameters — ask for a fresh link.";
   dot.className = "dot off";
+  sessionStatusEl.textContent = 'Error';
+  sessionStatusEl.className = 'stat-value bad';
+  addAlert('Invalid session parameters', 'error');
 } else {
-  let lastUpdate = 0;
   async function poll(){
     try{
-      const r = await fetch(api + "/watch/" + encodeURIComponent(watchId));
+      const r = await fetch(api + "/watch/" + encodeURIComponent(watchId), {
+        signal: AbortSignal.timeout(10000)
+      });
+      
+      if(!r.ok){
+        throw new Error(`HTTP ${r.status}`);
+      }
+      
       const d = await r.json();
-      if (!r.ok || !d.active){
+      
+      if (!d.active){
         statusText.textContent = "Sharing has been turned off.";
         dot.className = "dot off";
+        sessionStatusEl.textContent = 'Revoked';
+        sessionStatusEl.className = 'stat-value bad';
+        isActive = false;
+        addAlert('Access revoked', 'error');
+        if(pollTimer) clearInterval(pollTimer);
         return;
       }
+      
       if (d.image){
         img.src = "data:image/jpeg;base64," + d.image;
         img.style.display = "block";
         empty.style.display = "none";
         lastUpdate = Date.now();
-        dot.className = "dot";
-        statusText.textContent = "Live · updated just now";
+        frameCount++;
+        frameCountEl.textContent = frameCount;
+        statusText.textContent = "Live";
+        errorCount = 0;
+        updateTimeAgo();
       }
-    }catch(e){
-      dot.className = "dot stale";
-      statusText.textContent = "Connection trouble — retrying…";
+    } catch(e){
+      errorCount++;
+      dot.className = errorCount > 2 ? 'dot stale' : 'dot';
+      statusText.textContent = "Connection trouble…";
+      if(errorCount > 5){
+        addAlert(`Error: ${e.message}`, 'error');
+      }
     }
   }
+  
+  // Initial poll + set interval
   poll();
-  setInterval(poll, 3000);
-  setInterval(() => {
-    if (!lastUpdate) return;
-    const secs = Math.round((Date.now() - lastUpdate) / 1000);
-    if (secs > 4){
-      dot.className = secs > 15 ? "dot stale" : "dot";
-      statusText.textContent = "Updated " + secs + "s ago";
+  pollTimer = setInterval(poll, pollInterval);
+  
+  // Update time display every second
+  setInterval(updateTimeAgo, 1000);
+  
+  // Listen for settings changes
+  autoRefreshCheckbox.addEventListener('change', (e) => {
+    if(e.target.checked){
+      pollTimer = setInterval(poll, pollInterval);
+      addAlert('Auto-refresh enabled', 'info');
+    } else {
+      if(pollTimer) clearInterval(pollTimer);
+      addAlert('Auto-refresh disabled', 'info');
     }
-  }, 1000);
+  });
+  
+  refreshRateInput.addEventListener('change', (e) => {
+    pollInterval = parseInt(e.target.value) * 1000;
+    pollIntervalEl.textContent = e.target.value + 's';
+    if(autoRefreshCheckbox.checked && pollTimer){
+      clearInterval(pollTimer);
+      pollTimer = setInterval(poll, pollInterval);
+      addAlert(`Interval changed to ${e.target.value}s`, 'info');
+    }
+  });
 }
 </script>
 </body>
