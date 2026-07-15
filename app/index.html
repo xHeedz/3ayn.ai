@@ -724,7 +724,7 @@ function captureBase64(){
   const c = document.createElement("canvas");
   c.width = video.videoWidth; c.height = video.videoHeight;
   c.getContext("2d").drawImage(video, 0, 0);
-  return c.toDataURL("image/jpeg", 0.7).split(",")[1];
+  return c.toDataURL("image/jpeg", 0.4).split(",")[1];
 }
 
 async function api(path, body, resultEl){
@@ -945,12 +945,12 @@ function updateWatchUI(){
 }
 updateWatchUI();
 
-const WATCH_INTERVAL_MS = 1000;
+const WATCH_INTERVAL_MS = 1500;
 
 function captureWatchFrame(){
   if (!running) return null;
   const c = document.createElement("canvas");
-  const scale = 0.6;
+  const scale = 0.5;
   c.width  = Math.round(video.videoWidth  * scale);
   c.height = Math.round(video.videoHeight * scale);
   c.getContext("2d").drawImage(video, 0, 0, c.width, c.height);
