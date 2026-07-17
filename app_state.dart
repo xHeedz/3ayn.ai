@@ -19,7 +19,19 @@ class VoiceCommandBus {
   static final ValueNotifier<VoiceCommand?> command =
       ValueNotifier<VoiceCommand?>(null);
 
-  static void send(VoiceCommand cmd) => command.value = cmd;
+  /// Deliver [cmd] to whichever screen is currently listening.
+  ///
+  /// We force the notifier through `null` first. Without this, sending the
+  /// *same* command twice in a row is silently dropped: the describe / identify
+  /// / read commands are built with `const`, so Dart hands back the exact same
+  /// canonical instance every time, and `ValueNotifier` skips notifying when
+  /// the new value `==` the old one. Passing through null guarantees every
+  /// send is seen as a change and re-fires the listener — so "read the text",
+  /// "read the text" works the second time too.
+  static void send(VoiceCommand cmd) {
+    command.value = null;
+    command.value = cmd;
+  }
 }
 
 /// A single shared settings/state object. Screens listen to it with
