@@ -68,9 +68,46 @@ class _MainShellState extends State<MainShell> {
   }
 
   Future<void> _initSpeech() async {
-    final available = await _speech.initialize();
+    // Passing onError/onStatus is what makes silent failures visible. If the
+    // mic FAB "does nothing", the reason (e.g. error_permission,
+    // error_speech_timeout, or a plugin init failure) shows up in the console.
+    final available = await _speech.initialize(
+      onError: (e) => debugPrint(
+        'speech_to_text error: ${e.errorMsg} (permanent: ${e.permanent})',
+      ),
+      onStatus: (status) => debugPrint('speech_to_text status: $status'),
+    );
     if (!mounted) return;
     setState(() => _speechAvailable = available);
+
+    // Tell the user out loud if speech could not start — otherwise a missing
+    // microphone permission just looks like a dead button.
+    if (!available) {
+      Narrator.instance.say(
+        AppState.instance.isAr
+            ? 'تعذّر تشغيل التعرّف على الصوت. تحقّق من إذن الميكروفون.'
+            : 'Speech recognition is unavailable. Check the microphone permission.',
+      );
+    }
+  }
+
+  /// Picks a locale the device actually supports. If the exact preferred
+  /// locale (e.g. ar_LB) isn't installed, fall back to any locale for the
+  /// same language (ar_SA, en_GB…), and if none, return null so the platform
+  /// uses its own default instead of failing to listen.
+  Future<String?> _resolveLocale() async {
+    final wantAr = AppState.instance.isAr;
+    final preferred = wantAr ? 'ar_LB' : 'en_US';
+    final prefix = wantAr ? 'ar' : 'en';
+
+    final locales = await _speech.locales();
+    final ids = locales.map((l) => l.localeId).toList();
+
+    if (ids.contains(preferred)) return preferred;
+    for (final id in ids) {
+      if (id.toLowerCase().startsWith(prefix)) return id;
+    }
+    return null;
   }
 
   /// Normalises common Arabic letter variants (hamza forms, taa marbuta)
@@ -232,8 +269,11 @@ class _MainShellState extends State<MainShell> {
       if (!mounted) return;
       setState(() => _isListening = false);
     } else {
+      final localeId = await _resolveLocale();
       await _speech.listen(
-        localeId: AppState.instance.isAr ? 'ar_LB' : 'en_US',
+        localeId: localeId, // null => platform default if ar_LB isn't installed
+        listenFor: const Duration(seconds: 8),
+        pauseFor: const Duration(seconds: 3),
         onResult: (result) {
           if (result.finalResult) {
             _handleVoiceCommand(result.recognizedWords);
