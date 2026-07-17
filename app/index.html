@@ -988,7 +988,7 @@ function startFrameLoop(){
     if (!watchActive || !watchId || !running) return;
     const base = $("endpoint").value.trim();
     if (!base) return;
-    const img = captureWatchFrame();
+    const img = captureBase64();
     if (!img) return;
     try{
       await fetch(base + "/watch/frame", {
@@ -996,7 +996,7 @@ function startFrameLoop(){
         body: JSON.stringify({watchId, image: img})
       });
     }catch(e){ /* skip this tick, try again next interval */ }
-  }, 1000);
+  }, 3000);
 }
 function stopFrameLoop(){ if (watchTimer){ clearInterval(watchTimer); watchTimer = null; } }
 if (watchActive) startFrameLoop();
