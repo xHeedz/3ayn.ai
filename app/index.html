@@ -336,7 +336,7 @@
   <!-- ================= SETTINGS ================= -->
   <div class="screen" id="screen-settings">
     <h1>Settings</h1>
-    <input type="hidden" id="endpoint" value="https://pxv89q4lyk.execute-api.eu-west-2.amazonaws.com/Prod">
+    <input type="hidden" id="endpoint" value="https://pxv89q4lyk.execute-api.eu-west-2.amazonaws.com/Stage">
 
     <div class="card">
       <div class="label">VOICE & LANGUAGE</div>
@@ -440,6 +440,7 @@ let lang = "ar", muted = false, usePolly = false;
 let landmarker = null, running = false;
 let lastFired = {}, widthHistory = [], lastPersonSeen = 0;
 let hadPerson = false, quietAnnounced = false, currentPrio = 0;
+window.__appSpeaking = false;
 let arVoice = null, enVoice = null;
 let enrollImage = null;
 
@@ -516,10 +517,19 @@ function playEvent(key, prio){
   if (busyPrio > 0 && prio <= busyPrio) return true;   // suppressed by priority, still handled
   stopAllAudio();
   a.currentTime = 0;
-  currentEvtAudio = a; currentEvtPrio = prio;
+  currentEvtAudio = a;
+  currentEvtPrio = prio;
   window.__appSpeaking = true;
-  a.onended = () => { currentEvtPrio = 0; window.__appSpeaking = false; };
-  a.play().catch(()=>{});
+
+  const finishEventAudio = () => {
+    if (currentEvtAudio === a) currentEvtAudio = null;
+    currentEvtPrio = 0;
+    window.__appSpeaking = false;
+  };
+
+  a.onended = finishEventAudio;
+  a.onerror = finishEventAudio;
+  a.play().catch(finishEventAudio);
   return true;
 }
 
@@ -529,10 +539,27 @@ function playEvent(key, prio){
 function stopAllAudio(){
   speechSynthesis.cancel();
   currentPrio = 0;
-  if (currentEvtAudio){ currentEvtAudio.pause(); currentEvtAudio.currentTime = 0; }
+
+  if (currentEvtAudio){
+    currentEvtAudio.onended = null;
+    currentEvtAudio.onerror = null;
+    currentEvtAudio.pause();
+    currentEvtAudio.currentTime = 0;
+    currentEvtAudio = null;
+  }
   currentEvtPrio = 0;
-  if (currentAnswerAudio){ currentAnswerAudio.pause(); currentAnswerAudio.currentTime = 0; }
+
+  if (currentAnswerAudio){
+    currentAnswerAudio.onended = null;
+    currentAnswerAudio.onerror = null;
+    currentAnswerAudio.pause();
+    currentAnswerAudio.currentTime = 0;
+    currentAnswerAudio = null;
+  }
   currentAnswerPrio = 0;
+
+  // Never leave the voice-command echo guard permanently locked.
+  window.__appSpeaking = false;
 }
 
 async function speakSmart(text, prio = 5){
@@ -550,10 +577,19 @@ async function speakSmart(text, prio = 5){
         if (busyPrio > 0 && prio <= busyPrio) return;   // something more urgent is already speaking
         stopAllAudio();
         const audio = new Audio("data:audio/mp3;base64," + d.audio);
-        currentAnswerAudio = audio; currentAnswerPrio = prio;
+        currentAnswerAudio = audio;
+        currentAnswerPrio = prio;
         window.__appSpeaking = true;
-        audio.onended = () => { currentAnswerPrio = 0; window.__appSpeaking = false; };
-        audio.play().catch(()=>{});
+
+        const finishAnswerAudio = () => {
+          if (currentAnswerAudio === audio) currentAnswerAudio = null;
+          currentAnswerPrio = 0;
+          window.__appSpeaking = false;
+        };
+
+        audio.onended = finishAnswerAudio;
+        audio.onerror = finishAnswerAudio;
+        audio.play().catch(finishAnswerAudio);
         return;
       }
     }catch(e){ /* fall through to local voice */ }
@@ -724,7 +760,7 @@ function captureBase64(){
   const c = document.createElement("canvas");
   c.width = video.videoWidth; c.height = video.videoHeight;
   c.getContext("2d").drawImage(video, 0, 0);
-  return c.toDataURL("image/jpeg", 0.4).split(",")[1];
+  return c.toDataURL("image/jpeg", 0.7).split(",")[1];
 }
 
 async function api(path, body, resultEl){
@@ -792,6 +828,7 @@ $("readBtn").addEventListener("click", async () => {
 $("langSel").addEventListener("change", e => {
   lang = e.target.value;
   preloadEventAudio();
+  restartRecognitionForLanguage();
   speakLocal(lang === "ar" ? "تم التحويل إلى العربية" : "Switched to English", lang, 5);
 });
 $("soundTgl").addEventListener("click", e => {
@@ -833,7 +870,7 @@ let profile = null;
 try { profile = JSON.parse(storeGet("threeayn_profile") || "null"); } catch(e){}
 
 /* ---- restore saved settings so nothing needs re-entering on every visit ---- */
-const DEFAULT_ENDPOINT = "https://pxv89q4lyk.execute-api.eu-west-2.amazonaws.com/Prod";
+const DEFAULT_ENDPOINT = "https://pxv89q4lyk.execute-api.eu-west-2.amazonaws.com/Stage";
 (function restoreSettings(){
   const savedMuted = storeGet("threeayn_muted");
   if (savedMuted === "1"){ muted = true; $("soundTgl").classList.remove("on"); }
@@ -945,37 +982,21 @@ function updateWatchUI(){
 }
 updateWatchUI();
 
-const WATCH_INTERVAL_MS = 1500;
-
-function captureWatchFrame(){
-  if (!running) return null;
-  const c = document.createElement("canvas");
-  const scale = 0.5;
-  c.width  = Math.round(video.videoWidth  * scale);
-  c.height = Math.round(video.videoHeight * scale);
-  c.getContext("2d").drawImage(video, 0, 0, c.width, c.height);
-  return c.toDataURL("image/jpeg", 0.5).split(",")[1];
-}
-
 function startFrameLoop(){
   if (watchTimer) return;
-  let inFlight = false;
   watchTimer = setInterval(async () => {
-    if (inFlight) return;
     if (!watchActive || !watchId || !running) return;
     const base = $("endpoint").value.trim();
     if (!base) return;
     const img = captureWatchFrame();
     if (!img) return;
-    inFlight = true;
     try{
       await fetch(base + "/watch/frame", {
         method: "POST", headers: {"Content-Type": "application/json"},
         body: JSON.stringify({watchId, image: img})
       });
-    }catch(e){ /* skip this tick */ }
-    finally { inFlight = false; }
-  }, WATCH_INTERVAL_MS);
+    }catch(e){ /* skip this tick, try again next interval */ }
+  }, 1000);
 }
 function stopFrameLoop(){ if (watchTimer){ clearInterval(watchTimer); watchTimer = null; } }
 if (watchActive) startFrameLoop();
@@ -1018,25 +1039,76 @@ $("watchCopyBtn").addEventListener("click", () => {
 });
 
 /* ---------------- Voice Commands ---------------- */
+function normalizeVoiceText(text){
+  return String(text || "")
+    .toLowerCase()
+    .trim()
+    .replace(/[أإآ]/g, "ا")
+    .replace(/ة/g, "ه")
+    .replace(/[ًٌٍَُِّْـ]/g, "");
+}
+
+function selectObjectFromVoice(transcript){
+  const text = normalizeVoiceText(transcript);
+  const objects = [
+    { keys: ["water bottle", "bottle", "قنينه", "زجاجه"], value: "Bottle" },
+    { keys: ["cell phone", "mobile phone", "mobile", "phone", "هاتف", "موبايل", "تلفون", "تليفون"], value: "Mobile Phone" },
+    { keys: ["cup", "mug", "كوب", "فنجان"], value: "Cup" },
+    { keys: ["chair", "كرسي"], value: "Chair" },
+    { keys: ["door", "باب"], value: "Door" },
+    { keys: ["backpack", "handbag", "bag", "حقيبه", "شنطه", "شنته"], value: "Bag" },
+  ];
+
+  const found = objects.find(item =>
+    item.keys.some(key => text.includes(normalizeVoiceText(key)))
+  );
+  if (!found) return false;
+
+  const chip = [...document.querySelectorAll("#chips .chip")].find(
+    element => element.dataset.en === found.value
+  );
+  if (!chip) return false;
+
+  chip.click();
+  return true;
+}
+
 const VOICE_COMMANDS = [
-  { keys: ["اسأل","صف","وصف","ask","describe"],      action: () => { show("ask"); $("askBtn").click(); } },
-  { keys: ["اقرأ","read"],                             action: () => { show("read"); $("readBtn").click(); } },
-  { keys: ["دلني","لاقي","ابحث","find","where"],       action: () => { show("find"); $("findBtn").click(); } },
-  { keys: ["من هذا","من أمامي","who","who is"],        action: () => { show("ask"); $("whoBtn").click(); } },
-  { keys: ["شغل الكاميرا","شغل","start","turn on"],    action: () => { if (!running) $("powerBtn").click(); } },
-  { keys: ["أوقف","وقف الكاميرا","stop","turn off"],   action: () => { if (running) $("powerBtn").click(); } },
-  { keys: ["الرئيسية","الصفحة الرئيسية","home"],       action: () => show("home") },
-  { keys: ["الإعدادات","settings"],                    action: () => show("settings") },
+  {
+    keys: ["من هذا", "من امامي", "مين امامي", "مين قدامي", "who is this", "who is in front of me", "who"],
+    action: () => { show("ask"); $("whoBtn").click(); }
+  },
+  {
+    keys: ["اسال", "صف", "وصف", "ماذا حولي", "شو حولي", "ask", "describe", "what is around me"],
+    action: () => { show("ask"); $("askBtn").click(); }
+  },
+  {
+    keys: ["اقرا", "read"],
+    action: () => { show("read"); $("readBtn").click(); }
+  },
+  {
+    keys: ["دلني", "لاقي", "ابحث", "اين", "وين", "find", "where", "locate"],
+    action: transcript => {
+      show("find");
+      selectObjectFromVoice(transcript);
+      setTimeout(() => $("findBtn").click(), 100);
+    }
+  },
+  { keys: ["شغل الكاميرا", "شغل", "start", "turn on"], action: () => { if (!running) $("powerBtn").click(); } },
+  { keys: ["اوقف", "وقف الكاميرا", "stop", "turn off"], action: () => { if (running) $("powerBtn").click(); } },
+  { keys: ["الرئيسيه", "الصفحه الرئيسيه", "home"], action: () => show("home") },
+  { keys: ["الاعدادات", "settings"], action: () => show("settings") },
 ];
 
 let recognition = null;
 let voiceEnabled = storeGet("threeayn_voiceEnabled") === "1";
 let voiceRestarting = false;
+let micGranted = false;
 
 function matchCommand(transcript){
-  const t = transcript.trim().toLowerCase();
+  const text = normalizeVoiceText(transcript);
   for (const cmd of VOICE_COMMANDS){
-    if (cmd.keys.some(k => t.includes(k.toLowerCase()))) return cmd;
+    if (cmd.keys.some(key => text.includes(normalizeVoiceText(key)))) return cmd;
   }
   return null;
 }
@@ -1064,7 +1136,7 @@ function setupRecognition(){
     const cmd = matchCommand(transcript);
     if (cmd){
       speakLocal(lang === "ar" ? "\u062d\u0627\u0636\u0631" : "Okay", lang, 2);  // audible ack: the app heard you
-      setTimeout(cmd.action, 400);
+      setTimeout(() => cmd.action(transcript), 400);
     } else if (transcript.trim().split(/\s+/).length >= 3){
       // not a command: treat it as a spoken question -> Ask mode with the transcript
       speakLocal(lang === "ar" ? "\u062d\u0627\u0636\u0631" : "Okay", lang, 2);
@@ -1092,6 +1164,22 @@ function setupRecognition(){
     }
   };
   return r;
+}
+
+function restartRecognitionForLanguage(){
+  if (!recognition) return;
+
+  const oldRecognition = recognition;
+  recognition = null;
+  oldRecognition.onend = null;
+  try { oldRecognition.stop(); } catch(e){}
+
+  if (voiceEnabled && micGranted && window.__micStream){
+    recognition = setupRecognition();
+    setTimeout(() => {
+      try { recognition?.start(); } catch(e){}
+    }, 300);
+  }
 }
 
 function updateMicButton(){
@@ -1135,8 +1223,6 @@ if (voiceEnabled){
     }
   }).catch(() => { voiceEnabled = false; updateVoiceUI(); });
 }
-
-let micGranted = false;
 
 $("voiceTgl").addEventListener("click", async () => {
   if (!voiceEnabled){
