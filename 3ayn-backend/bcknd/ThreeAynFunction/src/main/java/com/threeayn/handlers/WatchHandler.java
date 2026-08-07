@@ -22,8 +22,10 @@ import java.util.UUID;
  * feature (Kinesis Video Streams WebRTC) — always available, nothing to fail.
  *
  * POST /watch/start { userId? }        -> { watchId }         wearer opts in
- * POST /watch/frame { watchId, image } -> { ok:true }         wearer uploads a frame
- * GET  /watch/{watchId}                -> { active, image, updatedAt } caregiver polls
+ * POST /watch/frame { watchId, image, lat?, lon?, acc? } -> { ok:true }
+ *      wearer uploads a frame; position rides along in the same request
+ * GET  /watch/{watchId} -> { active, image, updatedAt, lat, lon, acc, locAt }
+ *      caregiver polls frame and position together
  * POST /watch/stop  { watchId }        -> { ok:true }         wearer revokes access
  */
 public class WatchHandler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
@@ -69,6 +71,9 @@ public class WatchHandler implements RequestHandler<APIGatewayProxyRequestEvent,
         RequestParser req = new RequestParser(event);
         String watchId = req.requiredField("watchId");
         byte[] image = req.imageBytes();
+        String lat = req.field("lat", "");
+        String lon = req.field("lon", "");
+        String acc = req.field("acc", "");
 
         // only update if the session is still active — revoked sessions ignore uploads
         GetItemResponse existing = DDB.getItem(b -> b.tableName(TABLE)
@@ -80,6 +85,14 @@ public class WatchHandler implements RequestHandler<APIGatewayProxyRequestEvent,
         Map<String, AttributeValue> item = new HashMap<>(existing.item());
         item.put("image", AttributeValue.fromS(java.util.Base64.getEncoder().encodeToString(image)));
         item.put("updatedAt", AttributeValue.fromS(Instant.now().toString()));
+
+        // location is optional - the wearer may have denied the browser permission
+        if (!lat.isBlank() && !lon.isBlank()) {
+            item.put("lat", AttributeValue.fromS(lat));
+            item.put("lon", AttributeValue.fromS(lon));
+            item.put("acc", AttributeValue.fromS(acc.isBlank() ? "0" : acc));
+            item.put("locAt", AttributeValue.fromS(Instant.now().toString()));
+        }
         DDB.putItem(b -> b.tableName(TABLE).item(item));
 
         return ApiResponse.success(Map.of("ok", true));
@@ -102,6 +115,10 @@ public class WatchHandler implements RequestHandler<APIGatewayProxyRequestEvent,
         out.put("active", active);
         out.put("image", image);
         out.put("updatedAt", updatedAt);
+        out.put("lat",   item.item().containsKey("lat")   ? item.item().get("lat").s()   : null);
+        out.put("lon",   item.item().containsKey("lon")   ? item.item().get("lon").s()   : null);
+        out.put("acc",   item.item().containsKey("acc")   ? item.item().get("acc").s()   : null);
+        out.put("locAt", item.item().containsKey("locAt") ? item.item().get("locAt").s() : null);
         return ApiResponse.success(out);
     }
 
@@ -116,6 +133,10 @@ public class WatchHandler implements RequestHandler<APIGatewayProxyRequestEvent,
         Map<String, AttributeValue> item = new HashMap<>(existing.item());
         item.put("active", AttributeValue.fromBool(false));
         item.remove("image");
+        item.remove("lat");
+        item.remove("lon");
+        item.remove("acc");
+        item.remove("locAt");
         DDB.putItem(b -> b.tableName(TABLE).item(item));
 
         return ApiResponse.success(Map.of("ok", true));
