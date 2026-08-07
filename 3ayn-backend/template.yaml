@@ -7,7 +7,7 @@ Globals:
     Runtime: java21
     MemorySize: 1024
     Timeout: 30
-    CodeUri: ThreeAynFunction
+    CodeUri: bcknd/ThreeAynFunction
     Environment:
       Variables:
         MODEL_ID: global.amazon.nova-2-lite-v1:0
