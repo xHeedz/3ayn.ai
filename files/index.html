@@ -160,22 +160,6 @@
   .screen.active{display:block}
   .settingRow{display:flex;justify-content:space-between;align-items:center;padding:6px 0}
   .settingRow label{font-weight:700;font-size:14.5px}
-  .micWrap{display:flex;flex-direction:column;align-items:center;gap:8px;margin:16px 0 6px}
-  .micBig{
-    position:relative;width:96px;height:96px;border-radius:50%;border:none;cursor:pointer;
-    background:#FFFFFF;color:var(--accent);font-size:38px;
-    box-shadow:0 4px 20px rgba(90,84,212,.16);border:2px solid rgba(90,84,212,.18);
-    display:flex;align-items:center;justify-content:center;
-  }
-  .micBig:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
-  .micBig.on{background:var(--accent);color:#fff}
-  .micBig .ring{position:absolute;inset:0;border-radius:50%;border:2px solid rgba(90,84,212,.35);opacity:0;pointer-events:none}
-  .micBig.on .ring{animation:micPulse 2s ease-out infinite}
-  .micBig.on .ring:nth-child(2){animation-delay:1s}
-  @keyframes micPulse{0%{transform:scale(1);opacity:.8}100%{transform:scale(1.9);opacity:0}}
-  @media (prefers-reduced-motion: reduce){.micBig.on .ring{animation:none}}
-  .micLabel{font-size:13px;font-weight:700;color:var(--dim)}
-  .micLabel.on{color:var(--accent)}
   .tag{font-size:11px;font-weight:800;background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:2px 10px;margin-inline-start:8px;vertical-align:middle}
   .tag.on{background:var(--green);color:#fff}
   .toggle{width:48px;height:28px;border-radius:999px;background:#D6D2EA;border:none;cursor:pointer;position:relative}
@@ -255,14 +239,6 @@
       <div class="narEn" id="narEn">Nothing narrated yet</div>
     </div>
 
-    <div class="micWrap">
-      <button class="micBig" id="micBig" aria-label="Voice assistant — tap to listen">
-        <span class="ring"></span><span class="ring"></span>
-        🎙
-      </button>
-      <div class="micLabel" id="micLabel">Tap to talk to 3ayn · اضغطي وتكلمي</div>
-    </div>
-
     <div class="grid">
       <button class="tile" data-s="ask"><div class="ic">🎙</div><span>Ask</span></button>
       <button class="tile" data-s="find"><div class="ic">🔍</div><span>Find</span></button>
@@ -290,7 +266,7 @@
 
     <div class="wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
     <div class="listenTxt" id="listenTxt">Not listening yet</div>
-    <div class="listenTxt" style="font-size:10px;opacity:.6">build v-MIC4</div>
+    <div class="listenTxt" style="font-size:10px;opacity:.6">build v-MIC2</div>
   </div>
 
   <!-- ================= ASK ================= -->
@@ -410,7 +386,7 @@
 </div>
 
 <script type="module">
-console.log("3ayn build v-MIC4");
+console.log("3ayn build v-MIC2");
 import { FilesetResolver, PoseLandmarker } from
   "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
 
@@ -724,7 +700,7 @@ function captureBase64(){
   const c = document.createElement("canvas");
   c.width = video.videoWidth; c.height = video.videoHeight;
   c.getContext("2d").drawImage(video, 0, 0);
-  return c.toDataURL("image/jpeg", 0.4).split(",")[1];
+  return c.toDataURL("image/jpeg", 0.7).split(",")[1];
 }
 
 async function api(path, body, resultEl){
@@ -1048,28 +1024,13 @@ function setupRecognition(){
   r.continuous = true;
   r.interimResults = false;
   r.lang = lang === "ar" ? "ar-SA" : "en-US";
-  let labelTimer = null;
-  function flashHeard(t){
-    const lab = $("micLabel");
-    if (!lab) return;
-    lab.textContent = (lang === "ar" ? "\u0633\u0645\u0639\u062a: " : "Heard: ") + t;
-    clearTimeout(labelTimer);
-    labelTimer = setTimeout(updateMicButton, 3500);
-  }
   r.onresult = (e) => {
-    const transcript = e.results[e.results.length - 1][0].transcript;
-    console.log("3ayn heard:", transcript, window.__appSpeaking ? "(ignored: app speaking)" : "");
-    flashHeard(transcript);
     if (window.__appSpeaking) return;   // never obey our own narration (echo guard)
+    const transcript = e.results[e.results.length - 1][0].transcript;
     const cmd = matchCommand(transcript);
     if (cmd){
       speakLocal(lang === "ar" ? "\u062d\u0627\u0636\u0631" : "Okay", lang, 2);  // audible ack: the app heard you
       setTimeout(cmd.action, 400);
-    } else if (transcript.trim().split(/\s+/).length >= 3){
-      // not a command: treat it as a spoken question -> Ask mode with the transcript
-      speakLocal(lang === "ar" ? "\u062d\u0627\u0636\u0631" : "Okay", lang, 2);
-      $("askQ").value = transcript.trim();
-      setTimeout(() => { show("ask"); $("askBtn").click(); }, 400);
     }
   };
   r.onerror = (e) => {
@@ -1094,18 +1055,7 @@ function setupRecognition(){
   return r;
 }
 
-function updateMicButton(){
-  const btn = $("micBig"), lab = $("micLabel");
-  if (!btn) return;
-  btn.classList.toggle("on", voiceEnabled);
-  lab.classList.toggle("on", voiceEnabled);
-  lab.textContent = voiceEnabled
-    ? "I\u2019m listening \u00b7 \u0623\u0646\u0627 \u0623\u0633\u0645\u0639\u0643"
-    : "Tap to talk to 3ayn \u00b7 \u0627\u0636\u063a\u0637\u064a \u0648\u062a\u0643\u0644\u0645\u064a";
-}
-
 function updateVoiceUI(){
-  updateMicButton();
   $("voiceTgl").classList.toggle("on", voiceEnabled);
   const msg = $("voiceMsg");
   if (!window.SpeechRecognition && !window.webkitSpeechRecognition){
@@ -1162,7 +1112,6 @@ $("voiceTgl").addEventListener("click", async () => {
     storeSet("threeayn_voiceEnabled", "1");
     recognition = recognition || setupRecognition();
     try { recognition?.start(); } catch(e){}
-    speakLocal(lang === "ar" ? "\u0623\u0646\u0627 \u0623\u0633\u0645\u0639\u0643" : "I\u2019m listening", lang, 3);
   } else {
     voiceEnabled = false;
     storeSet("threeayn_voiceEnabled", "0");
@@ -1171,11 +1120,6 @@ $("voiceTgl").addEventListener("click", async () => {
     micGranted = false;
   }
   updateVoiceUI();
-});
-
-$("micBig").addEventListener("click", () => {
-  $("voiceTgl").click();   // same gated path: one mic grant, held stream, honest errors
-  if (!voiceEnabled) return;   // click handler is async; ack happens via updateVoiceUI + speech below
 });
 </script>
 </body>

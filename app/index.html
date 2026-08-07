@@ -921,21 +921,37 @@ function updateWatchUI(){
 }
 updateWatchUI();
 
+const WATCH_INTERVAL_MS = 1500;
+
+function captureWatchFrame(){
+  if (!running) return null;
+  const c = document.createElement("canvas");
+  const scale = 0.5;
+  c.width  = Math.round(video.videoWidth  * scale);
+  c.height = Math.round(video.videoHeight * scale);
+  c.getContext("2d").drawImage(video, 0, 0, c.width, c.height);
+  return c.toDataURL("image/jpeg", 0.5).split(",")[1];
+}
+
 function startFrameLoop(){
   if (watchTimer) return;
+  let inFlight = false;
   watchTimer = setInterval(async () => {
+    if (inFlight) return;
     if (!watchActive || !watchId || !running) return;
     const base = $("endpoint").value.trim();
     if (!base) return;
     const img = captureWatchFrame();
     if (!img) return;
+    inFlight = true;
     try{
       await fetch(base + "/watch/frame", {
         method: "POST", headers: {"Content-Type": "application/json"},
         body: JSON.stringify({watchId, image: img})
       });
-    }catch(e){ /* skip this tick, try again next interval */ }
-  }, 1000);
+    }catch(e){ /* skip this tick */ }
+    finally { inFlight = false; }
+  }, WATCH_INTERVAL_MS);
 }
 function stopFrameLoop(){ if (watchTimer){ clearInterval(watchTimer); watchTimer = null; } }
 if (watchActive) startFrameLoop();
