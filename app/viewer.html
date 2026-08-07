@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>3ayn — Trusted Viewer</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
   :root{ 
     --bg:#1A1523; 
@@ -346,6 +348,19 @@
       <div class="hint">
         This is not live video — it's a periodic snapshot they chose to share. They can revoke access at any time from Settings.
       </div>
+
+      <div class="frame-wrapper" style="margin-top:16px">
+        <div id="map" style="width:100%;height:320px;border-radius:12px;background:var(--card)"></div>
+      </div>
+
+      <div class="status-bar">
+        <div class="status-left">
+          <span class="dot off" id="geoDot"></span>
+          <span id="geoText">Waiting for location…</span>
+        </div>
+        <a id="mapsLink" href="#" target="_blank" rel="noopener"
+           style="color:var(--accent);text-decoration:none;display:none">Open in Maps ↗</a>
+      </div>
     </div>
     
     <div class="sidebar">
@@ -419,6 +434,39 @@ const alertsList = document.getElementById("alertsList");
 const autoRefreshCheckbox = document.getElementById("autoRefresh");
 const refreshRateInput = document.getElementById("refreshRate");
 const soundAlertCheckbox = document.getElementById("soundAlert");
+
+let map = null, marker = null, accCircle = null;
+
+function updateMap(lat, lon, acc){
+  const la = parseFloat(lat), lo = parseFloat(lon);
+  const ac = Math.max(parseFloat(acc || 0), 8);
+  if (!isFinite(la) || !isFinite(lo)) return;
+
+  if (!map){
+    map = L.map("map", {zoomControl: true}).setView([la, lo], 17);
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap contributors © CARTO'
+    }).addTo(map);
+    marker = L.circleMarker([la, lo], {
+      radius: 8, color: "#fff", weight: 2, fillColor: "#8B85F0", fillOpacity: 1
+    }).addTo(map);
+    accCircle = L.circle([la, lo], {
+      radius: ac, color: "#8B85F0", weight: 1, fillColor: "#8B85F0", fillOpacity: 0.15
+    }).addTo(map);
+  } else {
+    marker.setLatLng([la, lo]);
+    accCircle.setLatLng([la, lo]).setRadius(ac);
+    map.panTo([la, lo], {animate: true});
+  }
+
+  document.getElementById("geoDot").className = "dot";
+  document.getElementById("geoText").textContent =
+    "Live position · accurate to about " + Math.round(ac) + " m";
+  const link = document.getElementById("mapsLink");
+  link.href = "https://www.google.com/maps?q=" + la + "," + lo;
+  link.style.display = "inline";
+}
 
 let lastUpdate = 0;
 let frameCount = 0;
@@ -515,6 +563,13 @@ if (!watchId || !api){
         statusText.textContent = "Live";
         errorCount = 0;
         updateTimeAgo();
+      }
+
+      if (d.lat && d.lon){
+        updateMap(d.lat, d.lon, d.acc);
+      } else {
+        document.getElementById("geoText").textContent =
+          "Location not shared — they may have declined the permission";
       }
     } catch(e){
       errorCount++;
