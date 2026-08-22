@@ -946,8 +946,9 @@ function speakLocal(text, useLang, prio = 5){
   if (v) u.voice = v;
   u.lang = v ? v.lang : (useLang === "ar" ? "ar-SA" : "en-US");
   currentPrio = prio;
-  u.onend = () => { currentPrio = 0; };
-  u.onerror = () => { currentPrio = 0; };
+  window.__appSpeaking = true;
+  u.onend = () => { currentPrio = 0; window.__appSpeaking = false; };
+  u.onerror = () => { currentPrio = 0; window.__appSpeaking = false; };
   speechSynthesis.speak(u);
 }
 
@@ -984,7 +985,8 @@ function playEvent(key, prio){
   stopAllAudio();
   a.currentTime = 0;
   currentEvtAudio = a; currentEvtPrio = prio;
-  a.onended = () => { currentEvtPrio = 0; };
+  window.__appSpeaking = true;
+  a.onended = () => { currentEvtPrio = 0; window.__appSpeaking = false; };
   a.play().catch(()=>{});
   return true;
 }
@@ -1017,7 +1019,8 @@ async function speakSmart(text, prio = 5){
         stopAllAudio();
         const audio = new Audio("data:audio/mp3;base64," + d.audio);
         currentAnswerAudio = audio; currentAnswerPrio = prio;
-        audio.onended = () => { currentAnswerPrio = 0; };
+        window.__appSpeaking = true;
+        audio.onended = () => { currentAnswerPrio = 0; window.__appSpeaking = false; };
         audio.play().catch(()=>{});
         return;
       }
@@ -1211,7 +1214,9 @@ async function api(path, body, resultEl){
 
 function needCamera(resultEl){
   if (running) return false;
-  resultEl.textContent = lang === "ar" ? "شغّلي الكاميرا من الصفحة الرئيسية أولاً" : "Turn on Always listening first";
+  const msg = lang === "ar" ? "شغّلي الكاميرا من الصفحة الرئيسية أولاً" : "Turn on Always listening first";
+  resultEl.textContent = msg;
+  speakLocal(msg, lang, 3);   // a blind user must HEAR the dead-end, not see it
   return true;
 }
 
@@ -1850,21 +1855,41 @@ function updateWatchUI(){
 }
 updateWatchUI();
 
+/* Lighter and faster than captureBase64(): the watch loop uploads on a
+   timer, not on demand, so a half-size lower-quality frame keeps the
+   trusted viewer fresh without competing for bandwidth with the AI calls,
+   which still use full-resolution captureBase64(). */
+function captureWatchFrame(){
+  if (!running) return null;
+  const c = document.createElement("canvas");
+  const scale = 0.5;
+  c.width  = Math.round(video.videoWidth  * scale);
+  c.height = Math.round(video.videoHeight * scale);
+  c.getContext("2d").drawImage(video, 0, 0, c.width, c.height);
+  return c.toDataURL("image/jpeg", 0.5).split(",")[1];
+}
+
+const WATCH_INTERVAL_MS = 1500;
+
 function startFrameLoop(){
   if (watchTimer) return;
+  let inFlight = false;
   watchTimer = setInterval(async () => {
     if (!watchActive || !watchId || !running) return;
+    if (inFlight) return;   // never let a slow upload stack up behind the next tick
     const base = $("endpoint").value.trim();
     if (!base) return;
-    const img = captureBase64();
+    const img = captureWatchFrame();
     if (!img) return;
+    inFlight = true;
     try{
       await fetch(base + "/watch/frame", {
         method: "POST", headers: {"Content-Type": "application/json"},
         body: JSON.stringify({watchId, image: img})
       });
-    }catch(e){ /* skip this tick, try again next interval */ }
-  }, 3000);
+    }catch(e){ /* skip this tick */ }
+    finally { inFlight = false; }
+  }, WATCH_INTERVAL_MS);
 }
 function stopFrameLoop(){ if (watchTimer){ clearInterval(watchTimer); watchTimer = null; } }
 if (watchActive) startFrameLoop();
@@ -1938,15 +1963,31 @@ function setupRecognition(){
   r.interimResults = false;
   r.lang = lang === "ar" ? "ar-SA" : "en-US";
   r.onresult = (e) => {
+    if (window.__appSpeaking) return;   // never obey our own narration (echo guard)
     const transcript = e.results[e.results.length - 1][0].transcript;
     const cmd = matchCommand(transcript);
-    if (cmd) cmd.action();
+    if (cmd){
+      speakLocal(lang === "ar" ? "حاضر" : "Okay", lang, 2);  // audible ack: the app heard you
+      setTimeout(cmd.action, 400);
+    }
   };
-  r.onerror = () => { /* mic hiccup — restart handles recovery */ };
+  r.onerror = (e) => {
+    if (e.error === "not-allowed" || e.error === "service-not-allowed"){
+      voiceEnabled = false;
+      storeSet("threeayn_voiceEnabled", "0");
+      $("voiceTgl").classList.remove("on");
+      const msg = $("voiceMsg");
+      msg.textContent = lang === "ar"
+        ? "الميكروفون محظور — اسمحي به من أيقونة القفل بجانب العنوان ثم أعيدي التفعيل"
+        : "Microphone blocked — allow it from the lock icon next to the address bar, then re-enable";
+      msg.className = "statusMsg bad";
+    }
+    /* other errors (no-speech, network blips) recover via the onend restart */
+  };
   r.onend = () => {
     if (voiceEnabled && !voiceRestarting){
       voiceRestarting = true;
-      setTimeout(() => { voiceRestarting = false; try { r.start(); } catch(e){} }, 300);
+      setTimeout(() => { voiceRestarting = false; if (micGranted && window.__micStream) try { r.start(); } catch(e){} }, 300);
     }
   };
   return r;
@@ -1966,19 +2007,55 @@ function updateVoiceUI(){
 }
 updateVoiceUI();
 
+let micGranted = false;
+
 if (voiceEnabled){
-  recognition = setupRecognition();
-  try { recognition?.start(); } catch(e){}
+  // saved-on state from a previous session: verify the grant silently before starting,
+  // so page load never triggers a permission popup
+  navigator.permissions?.query({ name: "microphone" }).then(async p => {
+    if (p.state === "granted"){
+      try{
+        window.__micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        micGranted = true;
+        recognition = recognition || setupRecognition();
+        try { recognition?.start(); } catch(e){}
+      }catch(e){ voiceEnabled = false; updateVoiceUI(); }
+    } else {
+      voiceEnabled = false; updateVoiceUI();
+    }
+  }).catch(() => { voiceEnabled = false; updateVoiceUI(); });
 }
 
-$("voiceTgl").addEventListener("click", () => {
-  voiceEnabled = !voiceEnabled;
-  storeSet("threeayn_voiceEnabled", voiceEnabled ? "1" : "0");
-  if (voiceEnabled){
+$("voiceTgl").addEventListener("click", async () => {
+  if (!voiceEnabled){
+    // ONE clean permission request, tied to this tap. Recognition never starts without it,
+    // so the keep-alive loop can never re-summon the popup.
+    try{
+      const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // HOLD the stream while voice is on: with an active mic stream, Chrome's
+      // "Allow this time" grants stop re-prompting on every recognition restart.
+      window.__micStream = s;
+      micGranted = true;
+    }catch(err){
+      micGranted = false;
+      const msg = $("voiceMsg");
+      const text = lang === "ar"
+        ? "لم يُسمح بالميكروفون — الأوامر الصوتية تحتاج إذناً واحداً"
+        : "Microphone not allowed — voice commands need one permission";
+      msg.textContent = text; msg.className = "statusMsg bad";
+      speakLocal(text, lang, 3);
+      return;   // toggle stays off; no nagging loop
+    }
+    voiceEnabled = true;
+    storeSet("threeayn_voiceEnabled", "1");
     recognition = recognition || setupRecognition();
     try { recognition?.start(); } catch(e){}
   } else {
+    voiceEnabled = false;
+    storeSet("threeayn_voiceEnabled", "0");
     try { recognition?.stop(); } catch(e){}
+    if (window.__micStream){ window.__micStream.getTracks().forEach(t => t.stop()); window.__micStream = null; }
+    micGranted = false;
   }
   updateVoiceUI();
 });
