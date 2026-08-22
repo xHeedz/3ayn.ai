@@ -26,6 +26,70 @@ Resources:
         AllowMethods: "'POST,OPTIONS'"
         AllowHeaders: "'Content-Type'"
 
+  # ---------------------------------------------------------------------------
+  # Authentication (optional by design).
+  #
+  # 3ayn is an assistive device first: a blind user must never be locked out of
+  # it by a forgotten password. Signing in is therefore OPTIONAL - guest
+  # profiles keep working with no account. An account exists to link a wearer
+  # to a named guardian and to sync across devices.
+  #
+  # Passwords are never stored or seen by us; Cognito handles hashing,
+  # verification email, reset codes and lockout.
+  # ---------------------------------------------------------------------------
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: threeayn-users
+      UsernameAttributes: [email]
+      AutoVerifiedAttributes: [email]
+      MfaConfiguration: 'OFF'
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - Name: verified_email
+            Priority: 1
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: false
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireUppercase: false
+          RequireSymbols: false
+      Schema:
+        - Name: name
+          AttributeDataType: String
+          Mutable: true
+          Required: false
+      UserAttributeUpdateSettings:
+        AttributesRequireVerificationBeforeUpdate: [email]
+      VerificationMessageTemplate:
+        DefaultEmailOption: CONFIRM_WITH_CODE
+        EmailSubject: "Your 3ayn verification code"
+        EmailMessage: "Your 3ayn verification code is {####}"
+
+  # Public browser client: no secret (a secret cannot be kept in a web app).
+  # USER_PASSWORD_AUTH is enabled so the single-file frontend can authenticate
+  # over HTTPS without pulling in an SDK to implement SRP.
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: threeayn-web
+      UserPoolId: !Ref UserPool
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      PreventUserExistenceErrors: ENABLED
+      AccessTokenValidity: 60
+      IdTokenValidity: 60
+      RefreshTokenValidity: 30
+      TokenValidityUnits:
+        AccessToken: minutes
+        IdToken: minutes
+        RefreshToken: days
+
   ProfilesTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -216,3 +280,12 @@ Resources:
 Outputs:
   ApiBaseUrl:
     Value: !Sub "https://${ThreeAynApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
+  UserPoolId:
+    Description: Cognito user pool id
+    Value: !Ref UserPool
+  UserPoolClientId:
+    Description: Paste this into Settings -> Account in the app
+    Value: !Ref UserPoolClient
+  CognitoRegion:
+    Description: Paste this into Settings -> Account in the app
+    Value: !Ref AWS::Region
