@@ -300,6 +300,49 @@
   .acctBox .aMail{font-weight:700;font-size:14.5px;word-break:break-all}
   .acctBox .aState{color:var(--dim);font-size:12.5px;margin-top:1px}
 
+  /* grouped settings list (Figma "blind person settings") */
+  .listCard{background:var(--card);border-radius:var(--radius);margin-bottom:14px;overflow:hidden;
+    box-shadow:0 2px 10px rgba(10,47,107,.05)}
+  .listRow{
+    width:100%;font-family:inherit;font-size:15px;color:var(--ink);
+    background:none;border:none;cursor:pointer;text-align:start;
+    display:flex;align-items:center;gap:14px;padding:15px 18px;
+  }
+  .listRow + .listRow{border-top:1px solid var(--border)}
+  .listRow .lIcon{font-size:18px;width:22px;flex-shrink:0;text-align:center}
+  .listRow .lVal{margin-inline-start:auto;color:var(--accent);font-weight:700;font-size:14px}
+  .listRow:hover,.listRow:focus-visible{background:var(--accent-soft)}
+
+  /* edit profile form */
+  .formRow{display:flex;gap:12px}
+  .formRow > *{flex:1;min-width:0}
+  .fieldLabel{font-size:12px;color:var(--dim);margin-bottom:5px;font-weight:700}
+  .backBtn{
+    font-family:inherit;background:none;border:none;cursor:pointer;color:var(--ink);
+    font-size:22px;padding:4px 10px 4px 0;line-height:1;
+  }
+  .screenHead{display:flex;align-items:center;gap:6px;margin-bottom:16px}
+  .screenHead h1{margin:0 auto;padding-inline-end:32px}
+
+  /* guardian access-request cards */
+  .accessShot{
+    width:100%;aspect-ratio:16/10;border-radius:14px;object-fit:cover;display:block;
+    background:var(--accent-soft);border:1px solid var(--border);
+  }
+  .accessEmpty{
+    width:100%;aspect-ratio:16/10;border-radius:14px;background:var(--accent-soft);
+    border:1px solid var(--border);display:flex;align-items:center;justify-content:center;
+    color:var(--dim);font-size:13px;text-align:center;padding:12px;
+  }
+  .reqBtn{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    width:auto;margin:12px auto 0;padding:10px 18px;border-radius:999px;
+    font-family:inherit;font-weight:700;font-size:14px;cursor:pointer;
+    background:var(--card);color:var(--accent);border:1.5px solid var(--border-strong);
+    box-shadow:0 2px 8px rgba(10,47,107,.08);
+  }
+  .reqBtn:hover,.reqBtn:focus-visible{background:var(--accent-soft)}
+
   /* guardian placeholder home */
   .emptyState{text-align:center;padding:26px 18px}
   .emptyState .eIcon{font-size:40px;margin-bottom:12px}
@@ -482,14 +525,29 @@
   <div class="screen active" id="screen-home">
     <h1 id="homeTitle">Home</h1>
 
-    <!-- shown to guardian-role profiles until a wearer is linked (Phase 2) -->
-    <div class="card" id="guardianHome" style="display:none">
-      <div class="emptyState">
-        <div class="eIcon" aria-hidden="true">👤</div>
-        <div class="eTitle">Not linked to anyone yet</div>
-        <div class="eDesc">
-          When someone using 3ayn shares access with you, their camera and location will appear here.<br>
-          <span class="ar">لم يتم ربط أي شخص بعد</span>
+    <!-- guardian view: request access to the wearer's camera and location.
+         Nothing is shown until the wearer allows it on their own device. -->
+    <div id="guardianHome" style="display:none">
+      <div class="card">
+        <div class="label">CAMERA ACCESS</div>
+        <div class="accessEmpty" id="gCamShot">Nothing shared yet · <span class="ar">لا توجد مشاركة</span></div>
+        <button class="reqBtn" id="gReqCam"><span aria-hidden="true">📷</span> Request Camera Access</button>
+        <div class="statusMsg" id="gCamMsg"></div>
+      </div>
+
+      <div class="card">
+        <div class="label">LOCATION ACCESS</div>
+        <div class="accessEmpty" id="gLocShot">Nothing shared yet · <span class="ar">لا توجد مشاركة</span></div>
+        <button class="reqBtn" id="gReqLoc"><span aria-hidden="true">📍</span> Request Location Access</button>
+        <div class="statusMsg" id="gLocMsg"></div>
+      </div>
+
+      <div class="card">
+        <div class="emptyState" style="padding:18px 12px">
+          <div class="eDesc">
+            A request is read aloud on their phone. They choose to allow or deny it, and can stop sharing at any time.<br>
+            <span class="ar">لا شيء يُشارك حتى يوافقوا</span>
+          </div>
         </div>
       </div>
     </div>
@@ -585,6 +643,51 @@
     </div>
   </div>
 
+  <!-- ================= EDIT PROFILE ================= -->
+  <div class="screen" id="screen-editprofile">
+    <div class="screenHead">
+      <button class="backBtn" id="epBack" aria-label="Back to settings">←</button>
+      <h1>Edit profile</h1>
+    </div>
+    <div class="card">
+      <div class="fieldLabel" id="epNameLbl">Full name</div>
+      <input type="text" id="epName" placeholder="Full name" aria-labelledby="epNameLbl" autocomplete="name">
+
+      <div class="fieldLabel">Phone number</div>
+      <input type="text" id="epPhone" placeholder="Phone Number" inputmode="tel" autocomplete="tel">
+
+      <div class="formRow">
+        <div>
+          <div class="fieldLabel">Country</div>
+          <select id="epCountry">
+            <option value="">Country</option>
+            <option>Lebanon · لبنان</option>
+            <option>United Arab Emirates · الإمارات</option>
+            <option>Saudi Arabia · السعودية</option>
+            <option>Jordan · الأردن</option>
+            <option>Egypt · مصر</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div>
+          <div class="fieldLabel">Gender</div>
+          <select id="epGender">
+            <option value="">Genre</option>
+            <option>Female</option>
+            <option>Male</option>
+            <option>Prefer not to say</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="fieldLabel">Address</div>
+      <input type="text" id="epAddress" placeholder="Address" autocomplete="street-address">
+
+      <button class="bigBtn" id="epSubmit">SUBMIT · <span class="ar">حفظ</span></button>
+      <div class="statusMsg" id="epMsg"></div>
+    </div>
+  </div>
+
   <!-- ================= SETTINGS ================= -->
   <div class="screen" id="screen-settings">
     <h1>Settings</h1>
@@ -594,6 +697,24 @@
       <input type="url" id="endpoint" placeholder="https://xxxx.execute-api.eu-west-2.amazonaws.com/Prod">
       <button class="bigBtn secondary" id="testBtn">Test connection (calls /speak)</button>
       <div class="statusMsg" id="connMsg"></div>
+    </div>
+
+    <!-- grouped list, per Figma "blind person settings" -->
+    <div class="listCard">
+      <button class="listRow" id="lrEditProfile"><span class="lIcon" aria-hidden="true">🪪</span>Edit profile information</button>
+      <button class="listRow" id="lrNotifications"><span class="lIcon" aria-hidden="true">🔔</span>Notifications<span class="lVal" id="lrNotifVal">ON</span></button>
+      <button class="listRow" id="lrLanguage"><span class="lIcon" aria-hidden="true">🌐</span>Language<span class="lVal" id="lrLangVal">English</span></button>
+    </div>
+
+    <div class="listCard">
+      <button class="listRow" id="lrSecurity"><span class="lIcon" aria-hidden="true">🛡</span>Security</button>
+      <button class="listRow" id="lrTheme"><span class="lIcon" aria-hidden="true">🎨</span>Theme<span class="lVal" id="lrThemeVal">Light mode</span></button>
+    </div>
+
+    <div class="listCard">
+      <button class="listRow" id="lrHelp"><span class="lIcon" aria-hidden="true">💬</span>Help &amp; Support</button>
+      <button class="listRow" id="lrContact"><span class="lIcon" aria-hidden="true">✉️</span>Contact us</button>
+      <button class="listRow" id="lrPrivacy"><span class="lIcon" aria-hidden="true">🔒</span>Privacy policy</button>
     </div>
 
     <div class="card">
@@ -743,6 +864,68 @@ function show(s){
   document.querySelectorAll("nav button").forEach(b => b.classList.toggle("active", b.dataset.s === s));
 }
 document.querySelectorAll("[data-s]").forEach(b => b.addEventListener("click", () => show(b.dataset.s)));
+
+/* Edit profile is reached from Settings, not the main nav - keep the
+   Settings tab looking active while it's open, like a sub-page should. */
+function showEditProfile(){
+  show("editprofile");
+  document.querySelector('nav button[data-s="settings"]').classList.add("active");
+}
+$("epBack").addEventListener("click", () => show("settings"));
+$("lrEditProfile").addEventListener("click", () => {
+  epLoad();
+  showEditProfile();
+});
+
+function epLoad(){
+  if (!profile) return;
+  $("epName").value = profile.name || "";
+  $("epPhone").value = profile.phone || "";
+  $("epCountry").value = profile.country || "";
+  $("epGender").value = profile.gender || "";
+  $("epAddress").value = profile.address || "";
+}
+$("epSubmit").addEventListener("click", () => {
+  if (!profile) return;
+  const name = $("epName").value.trim();
+  if (!name){ setMsg("epMsg", "Full name is required.", false); return; }
+  profile.name = name;
+  profile.phone = $("epPhone").value.trim();
+  profile.country = $("epCountry").value;
+  profile.gender = $("epGender").value;
+  profile.address = $("epAddress").value.trim();
+  saveProfiles();
+  applyProfile();
+  setMsg("epMsg", "Saved.", true);
+});
+
+/* ---- rest of the "blind person settings" grouped list ----
+   Notifications/Language/Theme mirror controls that already exist further
+   down this screen; these rows are shortcuts to the same state, not a
+   second source of truth. */
+function syncSettingsSummary(){
+  $("lrNotifVal").textContent = "ON";  /* no notification system exists yet to turn off */
+  $("lrLangVal").textContent = (lang === "ar") ? "العربية" : "English";
+  $("lrThemeVal").textContent = document.body.getAttribute("data-theme") === "contrast" ? "High contrast" : "Light mode";
+}
+$("lrLanguage").addEventListener("click", () => {
+  $("langSel").value = $("langSel").value === "ar" ? "en" : "ar";
+  $("langSel").dispatchEvent(new Event("change"));
+  syncSettingsSummary();
+});
+$("lrTheme").addEventListener("click", () => { $("contrastTgl").click(); syncSettingsSummary(); });
+$("lrNotifications").addEventListener("click", () => {}); /* nothing to toggle yet - no notification system built */
+$("lrSecurity").addEventListener("click", showEditProfile); /* password/account lives on the account card for now */
+$("lrHelp").addEventListener("click", () => window.open("mailto:hello@3ayn.ai?subject=Help", "_blank"));
+$("lrContact").addEventListener("click", () => window.open("mailto:hello@3ayn.ai", "_blank"));
+$("lrPrivacy").addEventListener("click", () => setMsg("connMsg", "Privacy policy isn't published yet.", false));
+
+/* ---- guardian access requests ----
+   Intentionally NOT wired to /watch/* here - that state machine (request,
+   allow/deny, live frame + location) is being built separately. These
+   buttons are honest placeholders so the screen isn't silently broken. */
+$("gReqCam").addEventListener("click", () => setMsg("gCamMsg", "Camera sharing isn't connected yet.", false));
+$("gReqLoc").addEventListener("click", () => setMsg("gLocMsg", "Location sharing isn't connected yet.", false));
 
 /* ---------------- TTS ---------------- */
 function loadVoices(){
@@ -1557,6 +1740,7 @@ $("cogRegion").addEventListener("change",   e => storeSet("threeayn_cogRegion", 
 applyAuthUI();
 if (auth) ensureFreshToken();
 bootFlow();
+syncSettingsSummary();
 
 $("wStart").addEventListener("click", async () => {
   const name = $("wName").value.trim();
