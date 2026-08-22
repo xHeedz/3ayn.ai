@@ -16,11 +16,16 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * POST /user { name, lang, emergencyContact? }  -> { userId, text }  (create profile + welcome line)
- * GET  /user/{userId}                           -> { userId, name, lang, ... } or 404
+ * POST /user { name, lang, role?, emergencyContact? } -> { userId, role, text } (create profile + welcome line)
+ * GET  /user/{userId}                                 -> { userId, name, lang, role, ... } or 404
  *
  * Deliberately NO authentication: 3ayn is a single-wearer assistive device.
  * A profile personalizes narration and keys the event history — it is not an account.
+ *
+ * "role" is either "blind" (the wearer) or "guardian" (a linked caregiver who
+ * can later request to view the wearer's camera/location — see WatchHandler).
+ * It does not gate access on its own; it only selects which UI a profile sees.
+ * Defaults to "blind" so existing clients that don't send it keep working.
  */
 public class UserHandler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 
@@ -40,10 +45,14 @@ public class UserHandler implements RequestHandler<APIGatewayProxyRequestEvent, 
         }
     }
 
+    private static final java.util.Set<String> VALID_ROLES = java.util.Set.of("blind", "guardian");
+
     private APIGatewayProxyResponseEvent createUser(APIGatewayProxyRequestEvent event) {
         RequestParser req = new RequestParser(event);
         String name = req.requiredField("name");
         String lang = req.lang();
+        String role = req.field("role", "blind");
+        if (!VALID_ROLES.contains(role)) throw new IllegalArgumentException("role must be 'blind' or 'guardian'");
         String emergency = req.field("emergencyContact", "");
         String userId = UUID.randomUUID().toString();
 
@@ -51,6 +60,7 @@ public class UserHandler implements RequestHandler<APIGatewayProxyRequestEvent, 
         item.put("userId", AttributeValue.fromS(userId));
         item.put("name", AttributeValue.fromS(name));
         item.put("lang", AttributeValue.fromS(lang));
+        item.put("role", AttributeValue.fromS(role));
         item.put("createdAt", AttributeValue.fromS(Instant.now().toString()));
         if (!emergency.isBlank()) item.put("emergencyContact", AttributeValue.fromS(emergency));
         DDB.putItem(b -> b.tableName(TABLE).item(item));
@@ -58,7 +68,7 @@ public class UserHandler implements RequestHandler<APIGatewayProxyRequestEvent, 
         String welcome = lang.equals("ar")
             ? "أهلاً " + name + "، عين جاهزة لمساعدتك"
             : "Welcome " + name + ", 3ayn is ready to help you";
-        return ApiResponse.success(Map.of("userId", userId, "text", welcome));
+        return ApiResponse.success(Map.of("userId", userId, "role", role, "text", welcome));
     }
 
     private APIGatewayProxyResponseEvent getUser(APIGatewayProxyRequestEvent event) {
