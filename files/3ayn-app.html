@@ -342,7 +342,7 @@
       <button class="bigBtn" id="aSigninBtn">Log in · <span class="ar">تسجيل الدخول</span></button>
       <div class="authAlt">Don't have an account? <button class="linkBtn" id="aToSignup">Sign up</button></div>
       <div class="statusMsg" id="aMsg"></div>
-      <button class="bigBtn secondary" id="aCancel" style="margin-top:14px">Continue without an account</button>
+      <button class="bigBtn secondary" id="aCancel" style="margin-top:14px">Continue as guest · <span class="ar">متابعة كضيف</span></button>
     </div>
 
     <!-- sign up -->
@@ -356,7 +356,7 @@
       <button class="bigBtn" id="aSignupBtn">Create account · <span class="ar">إنشاء</span></button>
       <div class="authAlt">Already have an account? <button class="linkBtn" id="aToSignin">Sign in</button></div>
       <div class="statusMsg" id="aSuMsg"></div>
-      <button class="bigBtn secondary" id="aCancel2" style="margin-top:14px">Continue without an account</button>
+      <button class="bigBtn secondary" id="aCancel2" style="margin-top:14px">Continue as guest · <span class="ar">متابعة كضيف</span></button>
     </div>
 
     <!-- verify emailed code -->
@@ -1207,6 +1207,8 @@ document.querySelectorAll(".roleTile").forEach(tile => {
     $("wNamePrompt").innerHTML = pendingRole === "guardian"
       ? 'Tell us your name.<br><span class="ar">قولي لنا اسمك</span>'
       : 'Tell us your name so narration can greet you.<br><span class="ar">قولي لنا اسمك حتى يرحّب بك الصوت</span>';
+    /* signed in? we already know their name — prefill it, they just confirm language */
+    if (auth && auth.name && !$("wName").value) $("wName").value = auth.name;
     $("wName").focus();
   });
 });
@@ -1223,11 +1225,7 @@ $("wBack").addEventListener("click", () => {
   if (profiles.length) $("welcome").style.display = "none";
 });
 
-if (profile){
-  applyProfile();
-} else {
-  openWelcome();
-}
+/* boot decision runs at the end of the auth section, once `auth` is loaded */
 
 /* ---- profile switcher ---- */
 function renderProfiles(){
@@ -1327,6 +1325,7 @@ function saveAuth(result, emailFallback){
     accessToken: result.AccessToken,
     refreshToken: result.RefreshToken || (auth && auth.refreshToken) || null,
     email: claims.email || emailFallback || "",
+    name: claims.name || "",
     sub: claims.sub || "",
     expiresAt: Date.now() + ((result.ExpiresIn || 3600) * 1000)
   };
@@ -1373,8 +1372,10 @@ const A_STEPS = ["aStepSignin","aStepSignup","aStepVerify","aStepForgot","aStepR
 function authStep(id){
   A_STEPS.forEach(s => { $(s).style.display = (s === id) ? "block" : "none"; });
 }
-function openAuth(step){
-  if (!cogConfigured()){
+/* `force` shows the screen even with no pool configured yet — on first run the
+   account screen is the front door, and "Continue as guest" is always there. */
+function openAuth(step, force){
+  if (!cogConfigured() && !force){
     show("settings");
     $("connMsg").textContent = "Add your Cognito client id and region below, then sign in.";
     $("connMsg").className = "statusMsg";
@@ -1382,9 +1383,27 @@ function openAuth(step){
   }
   ["aMsg","aSuMsg","aVerifyMsg","aFpMsg","aRsMsg"].forEach(id => { $(id).textContent = ""; });
   authStep(step || "aStepSignin");
+  if (!cogConfigured()){
+    setMsg(step === "aStepSignup" ? "aSuMsg" : "aMsg",
+      "Accounts aren't set up yet — continue as a guest for now.", false);
+  }
   $("auth").classList.add("open");
 }
 function closeAuth(){ $("auth").classList.remove("open"); }
+
+/* leaving the account screen with no profile yet means going the guest route */
+function leaveAuth(){
+  closeAuth();
+  if (!profile) openWelcome();
+}
+
+/* First run shows account creation, matching the design. Anyone who doesn't
+   want an account taps "Continue as guest" and never sees it again. */
+function bootFlow(){
+  if (profile){ applyProfile(); return; }
+  if (auth && auth.email){ openWelcome(); return; }   // signed in, just needs a role
+  openAuth("aStepSignup", true);
+}
 
 function setMsg(id, text, ok){
   const el = $(id);
@@ -1402,11 +1421,11 @@ $("aForgotLink").addEventListener("click", () => {
   authStep("aStepForgot");
 });
 $("aFpBack").addEventListener("click", () => authStep("aStepSignin"));
-$("aCancel").addEventListener("click", closeAuth);
-$("aCancel2").addEventListener("click", closeAuth);
+$("aCancel").addEventListener("click", leaveAuth);
+$("aCancel2").addEventListener("click", leaveAuth);
 $("acctSigninBtn").addEventListener("click", () => openAuth("aStepSignin"));
 $("acctSignoutBtn").addEventListener("click", () => { signOut(); setMsg("connMsg", "Signed out.", true); });
-$("wSigninLink").addEventListener("click", () => { $("welcome").style.display = "none"; openAuth("aStepSignin"); });
+$("wSigninLink").addEventListener("click", () => { $("welcome").style.display = "none"; openAuth("aStepSignin", true); });
 
 $("aSigninBtn").addEventListener("click", async () => {
   const email = $("aEmail").value.trim(), pass = $("aPass").value;
@@ -1422,6 +1441,7 @@ $("aSigninBtn").addEventListener("click", async () => {
     $("aPass").value = "";
     closeAuth();
     speakLocal(lang === "ar" ? "تم تسجيل الدخول" : "Signed in", lang, 4);
+    if (!profile) openWelcome();   // new device: still needs a role
   } catch(e){
     if (/Confirm your email/.test(e.message)){
       pendingVerifyEmail = email; pendingVerifyPass = pass;
@@ -1467,6 +1487,7 @@ $("aVerifyBtn").addEventListener("click", async () => {
     $("aCode").value = ""; $("aSuPass").value = "";
     closeAuth();
     speakLocal(lang === "ar" ? "تم تأكيد الحساب" : "Account confirmed", lang, 4);
+    if (!profile) openWelcome();   // account made, now pick a role
   } catch(e){ setMsg("aVerifyMsg", e.message, false); }
 });
 
@@ -1512,6 +1533,7 @@ $("cogRegion").addEventListener("change",   e => storeSet("threeayn_cogRegion", 
 
 applyAuthUI();
 if (auth) ensureFreshToken();
+bootFlow();
 
 $("wStart").addEventListener("click", async () => {
   const name = $("wName").value.trim();
