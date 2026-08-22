@@ -8,18 +8,38 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
+  /* ---------- design tokens: two themes, one system ----------
+     "guardian" (default) = light navy/blue, for sighted/traditional users
+     "contrast" = black/yellow, high-contrast, for blind/low-vision users
+     Toggle by setting data-theme="contrast" on <body> (see Settings). */
   :root{
-    --bg:#DFDBF4;
-    --phone:#F4F2FB;
+    --bg:#EAF1FC;
+    --phone:#FFFFFF;
     --card:#FFFFFF;
-    --ink:#1A1523;
-    --dim:#9A96A8;
-    --accent:#5A54D4;
-    --accent-soft:#EDEBFA;
-    --green:#18A957;
+    --ink:#0B1725;
+    --dim:#5A6C82;
+    --accent:#0A2F6B;
+    --accent-ink:#FFFFFF;
+    --accent-soft:#F3F8FF;
+    --border:#DAE4F1;
+    --green:#34C759;
     --amber:#E8930C;
-    --red:#E5484D;
+    --red:#FF3B30;
     --radius:22px;
+  }
+  body[data-theme="contrast"]{
+    --bg:#000000;
+    --phone:#000000;
+    --card:#141414;
+    --ink:#FFFFFF;
+    --dim:#B8B8B8;
+    --accent:#FFD400;
+    --accent-ink:#000000;
+    --accent-soft:#1A1A1A;
+    --border:#333333;
+    --green:#34C759;
+    --amber:#FFD400;
+    --red:#FF3B30;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   body{
@@ -36,7 +56,7 @@
   nav{
     background:var(--card);border-radius:999px;
     display:flex;gap:4px;padding:6px;
-    box-shadow:0 6px 24px rgba(90,84,212,.10);
+    box-shadow:0 6px 24px rgba(10,47,107,.10);
     margin-bottom:22px;position:sticky;top:12px;z-index:20;
   }
   nav button{
@@ -44,7 +64,7 @@
     color:var(--dim);background:none;border:none;
     padding:10px 20px;border-radius:999px;cursor:pointer;
   }
-  nav button.active{background:var(--accent);color:#fff}
+  nav button.active{background:var(--accent);color:var(--accent-ink)}
   nav button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
   /* ---------- phone frame ---------- */
@@ -52,7 +72,7 @@
     width:100%;max-width:440px;
     background:var(--phone);border-radius:38px;
     padding:20px 20px 30px;
-    box-shadow:0 24px 60px rgba(40,32,90,.18);
+    box-shadow:0 24px 60px rgba(10,47,107,.18);
   }
   .statusRow{
     display:flex;justify-content:space-between;align-items:center;
@@ -68,7 +88,7 @@
   .card{
     background:var(--card);border-radius:var(--radius);
     padding:16px 18px;margin-bottom:14px;
-    box-shadow:0 2px 10px rgba(40,32,90,.05);
+    box-shadow:0 2px 10px rgba(10,47,107,.05);
   }
   .row{display:flex;align-items:center;gap:14px}
   .iconCircle{
@@ -95,7 +115,7 @@
     background:var(--card);border:none;border-radius:var(--radius);
     padding:16px 6px 14px;cursor:pointer;font-family:inherit;
     display:flex;flex-direction:column;align-items:center;gap:10px;
-    box-shadow:0 2px 10px rgba(40,32,90,.05);
+    box-shadow:0 2px 10px rgba(10,47,107,.05);
   }
   .tile .ic{
     width:46px;height:46px;border-radius:14px;background:var(--accent-soft);
@@ -133,7 +153,7 @@
   /* generic controls */
   .bigBtn{
     width:100%;font-family:inherit;font-weight:800;font-size:16px;
-    background:var(--accent);color:#fff;border:none;border-radius:16px;
+    background:var(--accent);color:var(--accent-ink);border:none;border-radius:16px;
     padding:16px;cursor:pointer;margin-bottom:12px;
   }
   .bigBtn.secondary{background:var(--accent-soft);color:var(--accent)}
@@ -141,16 +161,16 @@
   .bigBtn:focus-visible,.chip:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   input[type=text],input[type=url],select{
     width:100%;font-family:inherit;font-size:14px;
-    background:var(--card);border:1.5px solid #E3E0F2;border-radius:14px;
+    background:var(--card);border:1.5px solid var(--border);border-radius:14px;
     padding:13px 15px;margin-bottom:12px;color:var(--ink);
   }
   .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
   .chip{
     font-family:inherit;font-weight:700;font-size:13.5px;
-    background:var(--card);border:1.5px solid #E3E0F2;border-radius:999px;
+    background:var(--card);border:1.5px solid var(--border);border-radius:999px;
     padding:9px 16px;cursor:pointer;color:var(--ink);
   }
-  .chip.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+  .chip.sel{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
   .result{
     font-family:'Cairo';font-weight:700;font-size:17px;direction:rtl;text-align:right;
     line-height:1.9;min-height:24px;white-space:pre-wrap;
@@ -162,29 +182,43 @@
   .settingRow label{font-weight:700;font-size:14.5px}
   .tag{font-size:11px;font-weight:800;background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:2px 10px;margin-inline-start:8px;vertical-align:middle}
   .tag.on{background:var(--green);color:#fff}
-  .toggle{width:48px;height:28px;border-radius:999px;background:#D6D2EA;border:none;cursor:pointer;position:relative}
+  .toggle{width:48px;height:28px;border-radius:999px;background:var(--border);border:none;cursor:pointer;position:relative}
   .toggle::after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:left .15s}
   .toggle.on{background:var(--green)}
   .toggle.on::after{left:23px}
   .statusMsg{font-size:13px;font-weight:700;margin-top:4px;min-height:18px}
   .ok{color:var(--green)} .bad{color:var(--red)}
 
-  /* welcome / onboarding overlay */
-  #welcome{
+  /* welcome / onboarding overlays */
+  #welcome, #onboarding{
     position:fixed;inset:0;z-index:50;background:var(--bg);
     display:flex;align-items:center;justify-content:center;padding:20px;
+    overflow-y:auto;
   }
-  #welcome .inner{
+  #welcome .inner, #onboarding .inner{
     width:100%;max-width:400px;background:var(--card);
     border-radius:32px;padding:34px 28px;text-align:center;
-    box-shadow:0 24px 60px rgba(40,32,90,.18);
+    box-shadow:0 24px 60px rgba(10,47,107,.18);
+    margin:auto;
   }
   #welcome .brand{font-size:56px;display:block;margin-bottom:6px}
-  #welcome h2{font-size:22px;font-weight:800;margin-bottom:6px}
-  #welcome p{color:var(--dim);font-size:14px;margin-bottom:22px;line-height:1.6}
+  #welcome h2, #onboarding h2{font-size:22px;font-weight:800;margin-bottom:6px}
+  #welcome p, #onboarding p{color:var(--dim);font-size:14px;margin-bottom:22px;line-height:1.6}
+  #onboarding .inner{text-align:start}
+  #onboarding h2{text-align:center}
+  #onboarding .obSub{color:var(--dim);font-size:14px;margin-bottom:20px;line-height:1.5;text-align:center}
+  #onboarding .card{text-align:start}
 </style>
 </head>
 <body>
+<script>
+  /* Apply saved theme before first paint to avoid a flash of the wrong theme. */
+  try {
+    if (localStorage.getItem("threeayn_theme") === "contrast") {
+      document.body.setAttribute("data-theme", "contrast");
+    }
+  } catch(e){}
+</script>
 
 <div id="welcome" style="display:none">
   <div class="inner">
@@ -198,6 +232,47 @@
     </select>
     <button class="bigBtn" id="wStart">Get started · <span class="ar">ابدأ</span></button>
     <div class="statusMsg" id="wMsg"></div>
+  </div>
+</div>
+
+<div id="onboarding" style="display:none">
+  <div class="inner">
+    <h2>How to use 3ayn</h2>
+    <p class="obSub">A quick guide before we start · <span class="ar">دليل سريع قبل أن نبدأ</span></p>
+
+    <div class="card row">
+      <div class="iconCircle">👁</div>
+      <div>
+        <div class="cardTitle">Always listening</div>
+        <div class="cardSub">Turn this on and 3ayn narrates what's happening around you, out loud, the moment it happens.</div>
+      </div>
+    </div>
+
+    <div class="card row">
+      <div class="iconCircle">🎙</div>
+      <div>
+        <div class="cardTitle">Ask</div>
+        <div class="cardSub">Tap to describe what's in front of you, or ask who's there.</div>
+      </div>
+    </div>
+
+    <div class="card row">
+      <div class="iconCircle">🔍</div>
+      <div>
+        <div class="cardTitle">Find</div>
+        <div class="cardSub">Pick an object and 3ayn tells you which direction it's in.</div>
+      </div>
+    </div>
+
+    <div class="card row">
+      <div class="iconCircle">📖</div>
+      <div>
+        <div class="cardTitle">Read</div>
+        <div class="cardSub">Hold text steady in front of the camera to have it read aloud.</div>
+      </div>
+    </div>
+
+    <button class="bigBtn" id="obDone">Got it, let's go · <span class="ar">ابدأ</span></button>
   </div>
 </div>
 
@@ -317,6 +392,16 @@
       <input type="url" id="endpoint" placeholder="https://xxxx.execute-api.eu-west-2.amazonaws.com/Prod">
       <button class="bigBtn secondary" id="testBtn">Test connection (calls /speak)</button>
       <div class="statusMsg" id="connMsg"></div>
+    </div>
+
+    <div class="card">
+      <div class="label">ACCESSIBILITY</div>
+      <div class="settingRow">
+        <label>High-contrast mode (black / yellow)</label>
+        <button class="toggle" id="contrastTgl" aria-label="Toggle high-contrast mode"></button>
+      </div>
+      <div class="hint">Switches the whole app to a black background with high-contrast yellow accents — built for blind and low-vision users. Turn off for the standard light theme.</div>
+      <button class="bigBtn secondary" id="replayOnboardingBtn">How to use 3ayn · <span class="ar">كيف تستخدم عين</span></button>
     </div>
 
     <div class="card">
@@ -845,7 +930,17 @@ try { profile = JSON.parse(storeGet("threeayn_profile") || "null"); } catch(e){}
 
   const savedDebug = storeGet("threeayn_debug");
   if (savedDebug === "1"){ $("debug").style.display = "block"; $("dbgTgl").classList.add("on"); }
+
+  const savedTheme = storeGet("threeayn_theme");
+  if (savedTheme === "contrast"){ document.body.setAttribute("data-theme", "contrast"); $("contrastTgl").classList.add("on"); }
 })();
+
+$("contrastTgl").addEventListener("click", e => {
+  const on = document.body.getAttribute("data-theme") !== "contrast";
+  document.body.setAttribute("data-theme", on ? "contrast" : "guardian");
+  e.currentTarget.classList.toggle("on", on);
+  storeSet("threeayn_theme", on ? "contrast" : "guardian");
+});
 
 function applyProfile(){
   if (!profile) return;
@@ -887,6 +982,19 @@ $("wStart").addEventListener("click", async () => {
     ? "أهلاً " + name + "، عين جاهزة لمساعدتك"
     : "Welcome " + name + ", 3ayn is ready to help you";
   speakLocal(welcomeLine, wl, 5);
+
+  if (storeGet("threeayn_onboarded") !== "1") {
+    $("onboarding").style.display = "flex";
+  }
+});
+
+$("obDone").addEventListener("click", () => {
+  $("onboarding").style.display = "none";
+  storeSet("threeayn_onboarded", "1");
+});
+
+$("replayOnboardingBtn").addEventListener("click", () => {
+  $("onboarding").style.display = "flex";
 });
 
 /* if the backend URL is added later in Settings, sync the local profile up once */
