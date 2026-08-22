@@ -1351,10 +1351,19 @@ function saveProfiles(){
   storeSet("threeayn_profile", JSON.stringify(profile));
 }
 
+/* ---- deployed defaults ----
+   A visitor should never have to paste config to use the app - these are
+   the real, live values from the eu-west-2 deploy. Settings still lets
+   anyone override them (pointing at a different backend for testing),
+   but nobody has to type anything for the app to just work. */
+const DEFAULT_ENDPOINT = "https://pxv89q4lyk.execute-api.eu-west-2.amazonaws.com/Prod";
+const DEFAULT_COGNITO_CLIENT_ID = "3jpsi3jh3dk4uqh5i2a3m0egjo";
+const DEFAULT_COGNITO_REGION = "eu-west-2";
+
 /* ---- restore saved settings so nothing needs re-entering on every visit ---- */
 (function restoreSettings(){
   const savedEndpoint = storeGet("threeayn_endpoint");
-  if (savedEndpoint){ $("endpoint").value = savedEndpoint; }
+  $("endpoint").value = savedEndpoint || DEFAULT_ENDPOINT;
 
   const savedMuted = storeGet("threeayn_muted");
   if (savedMuted === "1"){ muted = true; $("soundTgl").classList.remove("on"); }
@@ -1477,8 +1486,8 @@ try { auth = JSON.parse(storeGet("threeayn_auth") || "null"); } catch(e){}
 
 function cogCfg(){
   return {
-    clientId: (storeGet("threeayn_cogClientId") || "").trim(),
-    region:   (storeGet("threeayn_cogRegion")   || "").trim()
+    clientId: (storeGet("threeayn_cogClientId") || "").trim() || DEFAULT_COGNITO_CLIENT_ID,
+    region:   (storeGet("threeayn_cogRegion")   || "").trim() || DEFAULT_COGNITO_REGION
   };
 }
 function cogConfigured(){ const c = cogCfg(); return !!(c.clientId && c.region); }
@@ -1732,8 +1741,8 @@ $("aRsBtn").addEventListener("click", async () => {
 });
 
 /* ---- Cognito config fields ---- */
-$("cogClientId").value = storeGet("threeayn_cogClientId") || "";
-$("cogRegion").value   = storeGet("threeayn_cogRegion")   || "";
+$("cogClientId").value = storeGet("threeayn_cogClientId") || DEFAULT_COGNITO_CLIENT_ID;
+$("cogRegion").value   = storeGet("threeayn_cogRegion")   || DEFAULT_COGNITO_REGION;
 $("cogClientId").addEventListener("change", e => storeSet("threeayn_cogClientId", e.target.value.trim()));
 $("cogRegion").addEventListener("change",   e => storeSet("threeayn_cogRegion",   e.target.value.trim()));
 
