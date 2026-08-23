@@ -17,16 +17,30 @@ import java.util.UUID;
 
 /**
  * Consent-gated "trusted viewer" — NOT live video. The wearer opts in from
- * Settings; a caregiver with the resulting link sees a still frame refreshed
- * every few seconds. This is the safety-net fallback behind the real live-video
- * feature (Kinesis Video Streams WebRTC) — always available, nothing to fail.
+ * Settings; a guardian can then request to view it, and the wearer must
+ * explicitly Allow or Deny before anything is shared. This is the safety-net
+ * fallback behind the real live-video feature (Kinesis Video Streams WebRTC)
+ * — always available, nothing to fail.
  *
- * POST /watch/start { userId? }        -> { watchId }         wearer opts in
- * POST /watch/frame { watchId, image, lat?, lon?, acc? } -> { ok:true }
- *      wearer uploads a frame; position rides along in the same request
- * GET  /watch/{watchId} -> { active, image, updatedAt, lat, lon, acc, locAt }
- *      caregiver polls frame and position together
- * POST /watch/stop  { watchId }        -> { ok:true }         wearer revokes access
+ * Consent state machine (consentStatus): idle -> pending -> approved|denied.
+ * Frame uploads are rejected unless consentStatus is "approved" — a guardian
+ * cannot see anything just by having the watchId, only after the wearer
+ * explicitly allows it.
+ *
+ * POST /watch/start   { userId? }                        -> { watchId, consentToken }
+ *      wearer opts in. consentToken is a secret the wearer's own device holds,
+ *      required to submit a consent decision - a guardian who only has the
+ *      watchId cannot forge an Allow on the wearer's behalf.
+ * POST /watch/request { watchId }                        -> { ok, consentStatus }
+ *      guardian asks to view; flips consentStatus to "pending"
+ * POST /watch/consent { watchId, consentToken, decision } -> { ok, consentStatus }
+ *      wearer answers "allow" or "deny"
+ * POST /watch/frame   { watchId, image, lat?, lon?, acc? } -> { ok:true }
+ *      wearer uploads a frame; rejected (403) unless consentStatus is "approved"
+ * GET  /watch/{watchId} -> { active, consentStatus, requestedAt, image, updatedAt, lat, lon, acc, locAt }
+ *      both sides poll this - image/location fields are null unless approved
+ * POST /watch/stop    { watchId }                        -> { ok:true }
+ *      wearer revokes access
  */
 public class WatchHandler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 
@@ -41,6 +55,8 @@ public class WatchHandler implements RequestHandler<APIGatewayProxyRequestEvent,
 
             if ("GET".equalsIgnoreCase(method)) return getFrame(event);
             if (path.endsWith("/start")) return start(event);
+            if (path.endsWith("/request")) return request(event);
+            if (path.endsWith("/consent")) return consent(event);
             if (path.endsWith("/frame")) return frame(event);
             if (path.endsWith("/stop")) return stop(event);
             return ApiResponse.error(404, "Unknown watch route");
@@ -56,15 +72,79 @@ public class WatchHandler implements RequestHandler<APIGatewayProxyRequestEvent,
         RequestParser req = new RequestParser(event);
         String userId = req.field("userId", "");
         String watchId = UUID.randomUUID().toString().substring(0, 8);
+        String consentToken = UUID.randomUUID().toString();
 
         Map<String, AttributeValue> item = new HashMap<>();
         item.put("watchId", AttributeValue.fromS(watchId));
         item.put("active", AttributeValue.fromBool(true));
+        item.put("consentStatus", AttributeValue.fromS("idle"));
+        item.put("consentToken", AttributeValue.fromS(consentToken));
         item.put("userId", AttributeValue.fromS(userId));
         item.put("createdAt", AttributeValue.fromS(Instant.now().toString()));
         DDB.putItem(b -> b.tableName(TABLE).item(item));
 
-        return ApiResponse.success(Map.of("watchId", watchId));
+        return ApiResponse.success(Map.of("watchId", watchId, "consentToken", consentToken));
+    }
+
+    private APIGatewayProxyResponseEvent request(APIGatewayProxyRequestEvent event) {
+        RequestParser req = new RequestParser(event);
+        String watchId = req.requiredField("watchId");
+
+        GetItemResponse existing = DDB.getItem(b -> b.tableName(TABLE)
+            .key(Map.of("watchId", AttributeValue.fromS(watchId))));
+        if (!existing.hasItem()) return ApiResponse.error(404, "Watch session not found");
+
+        boolean active = existing.item().getOrDefault("active", AttributeValue.fromBool(false)).bool();
+        if (!active) return ApiResponse.error(410, "Watch session not active");
+
+        Map<String, AttributeValue> item = new HashMap<>(existing.item());
+        item.put("consentStatus", AttributeValue.fromS("pending"));
+        item.put("requestedAt", AttributeValue.fromS(Instant.now().toString()));
+        DDB.putItem(b -> b.tableName(TABLE).item(item));
+
+        return ApiResponse.success(Map.of("ok", true, "consentStatus", "pending"));
+    }
+
+    private APIGatewayProxyResponseEvent consent(APIGatewayProxyRequestEvent event) {
+        RequestParser req = new RequestParser(event);
+        String watchId = req.requiredField("watchId");
+        String consentToken = req.requiredField("consentToken");
+        String decision = req.requiredField("decision").trim().toLowerCase();
+
+        GetItemResponse existing = DDB.getItem(b -> b.tableName(TABLE)
+            .key(Map.of("watchId", AttributeValue.fromS(watchId))));
+        if (!existing.hasItem()) return ApiResponse.error(404, "Watch session not found");
+
+        boolean active = existing.item().getOrDefault("active", AttributeValue.fromBool(false)).bool();
+        if (!active) return ApiResponse.error(410, "Watch session not active");
+
+        String expectedToken = existing.item().containsKey("consentToken")
+            ? existing.item().get("consentToken").s() : "";
+        if (!expectedToken.equals(consentToken)) return ApiResponse.error(403, "Invalid consent token");
+
+        String status;
+        if ("allow".equals(decision) || "approved".equals(decision)) {
+            status = "approved";
+        } else if ("deny".equals(decision) || "denied".equals(decision)) {
+            status = "denied";
+        } else {
+            return ApiResponse.error(400, "decision must be allow or deny");
+        }
+
+        Map<String, AttributeValue> item = new HashMap<>(existing.item());
+        item.put("consentStatus", AttributeValue.fromS(status));
+        item.put("consentUpdatedAt", AttributeValue.fromS(Instant.now().toString()));
+        if ("denied".equals(status)) {
+            item.remove("image");
+            item.remove("updatedAt");
+            item.remove("lat");
+            item.remove("lon");
+            item.remove("acc");
+            item.remove("locAt");
+        }
+        DDB.putItem(b -> b.tableName(TABLE).item(item));
+
+        return ApiResponse.success(Map.of("ok", true, "consentStatus", status));
     }
 
     private APIGatewayProxyResponseEvent frame(APIGatewayProxyRequestEvent event) {
@@ -80,6 +160,12 @@ public class WatchHandler implements RequestHandler<APIGatewayProxyRequestEvent,
             .key(Map.of("watchId", AttributeValue.fromS(watchId))));
         if (!existing.hasItem() || !existing.item().getOrDefault("active", AttributeValue.fromBool(false)).bool()) {
             return ApiResponse.error(410, "Watch session not active");
+        }
+
+        String consentStatus = existing.item().containsKey("consentStatus")
+            ? existing.item().get("consentStatus").s() : "idle";
+        if (!"approved".equals(consentStatus)) {
+            return ApiResponse.error(403, "Guardian viewing has not been approved");
         }
 
         Map<String, AttributeValue> item = new HashMap<>(existing.item());
@@ -108,17 +194,25 @@ public class WatchHandler implements RequestHandler<APIGatewayProxyRequestEvent,
         if (!item.hasItem()) return ApiResponse.error(404, "Watch session not found");
 
         boolean active = item.item().getOrDefault("active", AttributeValue.fromBool(false)).bool();
-        String image = item.item().containsKey("image") ? item.item().get("image").s() : null;
-        String updatedAt = item.item().containsKey("updatedAt") ? item.item().get("updatedAt").s() : null;
+        String consentStatus = item.item().containsKey("consentStatus")
+            ? item.item().get("consentStatus").s() : "idle";
 
         Map<String, Object> out = new HashMap<>();
         out.put("active", active);
-        out.put("image", image);
-        out.put("updatedAt", updatedAt);
-        out.put("lat",   item.item().containsKey("lat")   ? item.item().get("lat").s()   : null);
-        out.put("lon",   item.item().containsKey("lon")   ? item.item().get("lon").s()   : null);
-        out.put("acc",   item.item().containsKey("acc")   ? item.item().get("acc").s()   : null);
-        out.put("locAt", item.item().containsKey("locAt") ? item.item().get("locAt").s() : null);
+        out.put("consentStatus", consentStatus);
+        if (item.item().containsKey("requestedAt")) {
+            out.put("requestedAt", item.item().get("requestedAt").s());
+        }
+
+        // image/location only ever leave the server once the wearer has approved -
+        // having the watchId alone must never be enough to see anything
+        boolean approved = "approved".equals(consentStatus);
+        out.put("image",   approved && item.item().containsKey("image")   ? item.item().get("image").s()   : null);
+        out.put("updatedAt", approved && item.item().containsKey("updatedAt") ? item.item().get("updatedAt").s() : null);
+        out.put("lat",   approved && item.item().containsKey("lat")   ? item.item().get("lat").s()   : null);
+        out.put("lon",   approved && item.item().containsKey("lon")   ? item.item().get("lon").s()   : null);
+        out.put("acc",   approved && item.item().containsKey("acc")   ? item.item().get("acc").s()   : null);
+        out.put("locAt", approved && item.item().containsKey("locAt") ? item.item().get("locAt").s() : null);
         return ApiResponse.success(out);
     }
 
@@ -132,6 +226,7 @@ public class WatchHandler implements RequestHandler<APIGatewayProxyRequestEvent,
 
         Map<String, AttributeValue> item = new HashMap<>(existing.item());
         item.put("active", AttributeValue.fromBool(false));
+        item.put("consentStatus", AttributeValue.fromS("stopped"));
         item.remove("image");
         item.remove("lat");
         item.remove("lon");

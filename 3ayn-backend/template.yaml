@@ -258,6 +258,18 @@ Resources:
             RestApiId: !Ref ThreeAynApi
             Path: /watch/start
             Method: post
+        WatchRequest:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ThreeAynApi
+            Path: /watch/request
+            Method: post
+        WatchConsent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ThreeAynApi
+            Path: /watch/consent
+            Method: post
         WatchFrame:
           Type: Api
           Properties:
