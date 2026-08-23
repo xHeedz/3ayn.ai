@@ -829,7 +829,7 @@
         <input type="text" id="watchLink" readonly style="margin-top:8px">
         <button class="bigBtn secondary" id="watchCopyBtn">Copy link</button>
       </div>
-      <div class="hint">Off by default. Turning this on shares a still frame from your camera (refreshed every few seconds) with anyone who has the link — not full video, and not enabled unless you turn it on yourself. Turn off any time to revoke access instantly.</div>
+      <div class="hint">Off by default. Turning this on lets a linked guardian request to see a still frame from your camera and your current location — refreshed every few seconds, not full video, and nothing is ever shared until you explicitly Allow their request. Turn off any time to revoke access and stop sharing your location instantly.</div>
     </div>
 
     <div class="card">
@@ -1983,6 +1983,45 @@ $("enSendBtn").addEventListener("click", async () => {
 });
 
 /* ---------------- Trusted Viewer (consent-gated snapshot sharing) ---------------- */
+
+/* Live position, from William's live-location work — rides along with the frame
+   upload, so it costs no extra request. Unlike the original version, this only
+   runs once a guardian request has actually been approved (startGeo/keepAwake
+   are called from respondToConsent, not the moment sharing is toggled on) -
+   the wearer's location should never be sampled just because Trusted Viewer is
+   on, only once someone specific has been allowed to see it. */
+let lastPos = null, geoWatch = null;
+
+function startGeo(){
+  if (geoWatch !== null || !navigator.geolocation) return;
+  geoWatch = navigator.geolocation.watchPosition(
+    p => { lastPos = {lat: p.coords.latitude, lon: p.coords.longitude, acc: p.coords.accuracy}; },
+    e => { console.warn("location unavailable:", e.message); lastPos = null; },
+    {enableHighAccuracy: true, maximumAge: 5000, timeout: 15000}
+  );
+}
+function stopGeo(){
+  if (geoWatch !== null){ navigator.geolocation.clearWatch(geoWatch); geoWatch = null; }
+  lastPos = null;
+}
+
+/* Browser location stops when the screen sleeps. Hold the screen awake while
+   approved sharing is active. Best-effort: unsupported browsers simply carry on. */
+let wakeLock = null;
+async function keepAwake(on){
+  try {
+    if (on && ("wakeLock" in navigator)) {
+      wakeLock = await navigator.wakeLock.request("screen");
+      wakeLock.addEventListener("release", () => { wakeLock = null; });
+    } else if (!on && wakeLock) {
+      await wakeLock.release(); wakeLock = null;
+    }
+  } catch (e) { console.warn("wake lock unavailable:", e.message); }
+}
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && consentStatus === "approved" && !wakeLock) keepAwake(true);
+});
+
 let watchId = storeGet("threeayn_watchId") || null;
 let watchActive = storeGet("threeayn_watchActive") === "1";
 let consentToken = storeGet("threeayn_consentToken") || null;
@@ -2060,7 +2099,7 @@ async function respondToConsent(decision){
     renderConsentCard();
     if (consentStatus === "approved"){
       speakLocal(lang === "ar" ? "بدأت مشاركة الكاميرا والموقع" : "Camera and location sharing started", lang, 3);
-      startFrameLoop();
+      startFrameLoop(); startGeo(); keepAwake(true);
     } else {
       speakLocal(lang === "ar" ? "تم رفض الطلب. لا تتم مشاركة أي شيء" : "Request denied. Nothing is being shared", lang, 3);
     }
@@ -2088,7 +2127,13 @@ function startConsentPoll(){
       if (next !== consentStatus){
         consentStatus = next;
         renderConsentCard();
-        if (consentStatus === "stopped") stopFrameLoop();
+        if (consentStatus === "approved"){
+          // covers resuming an already-approved session after a page reload,
+          // not just the moment Allow is tapped
+          startFrameLoop(); startGeo(); keepAwake(true);
+        } else {
+          stopFrameLoop(); stopGeo(); keepAwake(false);
+        }
       }
     }catch(e){ /* one missed poll is fine, try again next tick */ }
   }, 1500);
@@ -2139,7 +2184,11 @@ function startFrameLoop(){
     try{
       await fetch(base + "/watch/frame", {
         method: "POST", headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({watchId, image: img})
+        body: JSON.stringify(lastPos
+          ? {watchId, image: img,
+             lat: String(lastPos.lat), lon: String(lastPos.lon),
+             acc: String(Math.round(lastPos.acc))}
+          : {watchId, image: img})
       });
     }catch(e){ /* skip this tick */ }
     finally { inFlight = false; }
@@ -2160,6 +2209,8 @@ $("consentStopBtn").addEventListener("click", async () => {
   storeSet("threeayn_watchActive", "0");
   stopFrameLoop();
   stopConsentPoll();
+  stopGeo();
+  keepAwake(false);
   renderConsentCard();
   updateWatchUI();
   speakLocal(lang === "ar" ? "تم إيقاف المشاركة" : "Sharing stopped", lang, 3);
@@ -2197,6 +2248,8 @@ $("watchTgl").addEventListener("click", async () => {
     storeSet("threeayn_watchActive", "0");
     stopFrameLoop();
     stopConsentPoll();
+    stopGeo();
+    keepAwake(false);
     renderConsentCard();
     updateWatchUI();
   }
