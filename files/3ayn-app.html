@@ -324,6 +324,16 @@
   .screenHead{display:flex;align-items:center;gap:6px;margin-bottom:16px}
   .screenHead h1{margin:0 auto;padding-inline-end:32px}
 
+  /* wearer-side consent card: active sharing gets a strong accent highlight,
+     matching Figma's navy "SHARING ACTIVE" card - it should read as distinct
+     from a normal white card since something real is currently happening. */
+  #consentCard.consentActive{background:var(--accent);color:var(--accent-ink)}
+  #consentCard.consentActive #consentTitle,
+  #consentCard.consentActive #consentSub{color:var(--accent-ink)}
+  #consentCard.consentActive .label{color:var(--accent-ink);opacity:.75}
+  #consentCard.consentActive .bigBtn.dangerQuiet{border-color:var(--accent-ink);color:var(--accent-ink)}
+  #consentActions{display:flex;flex-direction:column;gap:0}
+
   /* guardian access-request cards */
   .accessShot{
     width:100%;aspect-ratio:16/10;border-radius:14px;object-fit:cover;display:block;
@@ -528,27 +538,42 @@
     <!-- guardian view: request access to the wearer's camera and location.
          Nothing is shown until the wearer allows it on their own device. -->
     <div id="guardianHome" style="display:none">
-      <div class="card">
-        <div class="label">CAMERA ACCESS</div>
-        <div class="accessEmpty" id="gCamShot">Nothing shared yet · <span class="ar">لا توجد مشاركة</span></div>
-        <button class="reqBtn" id="gReqCam"><span aria-hidden="true">📷</span> Request Camera Access</button>
-        <div class="statusMsg" id="gCamMsg"></div>
+      <!-- shown until this guardian is paired with a wearer's session -->
+      <div class="card" id="gPairCard">
+        <div class="label">LINK TO A FAMILY MEMBER</div>
+        <div class="cardSub" id="gPairHint" style="margin-bottom:12px">Paste the link they copied from Settings → Trusted Viewer, or enter the code.</div>
+        <input type="text" id="gPairInput" placeholder="Paste link or code · الصق الرابط أو الرمز">
+        <button class="bigBtn secondary" id="gPairBtn">Link · <span class="ar">ربط</span></button>
+        <button class="bigBtn secondary" id="gPairSameDevice" style="display:none">Use the profile on this phone · <span class="ar">استخدم ملف هذا الهاتف</span></button>
+        <div class="statusMsg" id="gPairMsg"></div>
       </div>
 
-      <div class="card">
-        <div class="label">LOCATION ACCESS</div>
-        <div class="accessEmpty" id="gLocShot">Nothing shared yet · <span class="ar">لا توجد مشاركة</span></div>
-        <button class="reqBtn" id="gReqLoc"><span aria-hidden="true">📍</span> Request Location Access</button>
-        <div class="statusMsg" id="gLocMsg"></div>
-      </div>
+      <!-- shown once paired -->
+      <div id="gLinkedCards" style="display:none">
+        <div class="card">
+          <div class="label">CAMERA ACCESS</div>
+          <div class="accessEmpty" id="gCamShot">Nothing shared yet · <span class="ar">لا توجد مشاركة</span></div>
+          <button class="reqBtn" id="gReqCam"><span aria-hidden="true">📷</span> Request Camera Access</button>
+          <div class="statusMsg" id="gCamMsg"></div>
+        </div>
 
-      <div class="card">
-        <div class="emptyState" style="padding:18px 12px">
-          <div class="eDesc">
-            A request is read aloud on their phone. They choose to allow or deny it, and can stop sharing at any time.<br>
-            <span class="ar">لا شيء يُشارك حتى يوافقوا</span>
+        <div class="card">
+          <div class="label">LOCATION ACCESS</div>
+          <div class="accessEmpty" id="gLocShot">Nothing shared yet · <span class="ar">لا توجد مشاركة</span></div>
+          <button class="reqBtn" id="gReqLoc"><span aria-hidden="true">📍</span> Request Location Access</button>
+          <div class="statusMsg" id="gLocMsg"></div>
+        </div>
+
+        <div class="card">
+          <div class="emptyState" style="padding:18px 12px">
+            <div class="eDesc">
+              A request is read aloud on their phone. They choose to allow or deny it, and can stop sharing at any time.<br>
+              <span class="ar">لا شيء يُشارك حتى يوافقوا</span>
+            </div>
           </div>
         </div>
+
+        <button class="linkBtn" id="gUnlinkBtn" style="margin-top:4px">Unlink this family member</button>
       </div>
     </div>
 
@@ -560,6 +585,19 @@
         <div class="cardSub"><span class="ar">مستمع دائماً</span> · <span id="aiState">AI idle</span></div>
       </div>
       <button class="onBadge off" id="powerBtn"><span class="d"></span><span id="powerTxt">Off</span></button>
+    </div>
+
+    <!-- guardian consent card: pending request / active sharing / just-denied.
+         Hidden whenever consentStatus is idle - nothing to show, nothing shared. -->
+    <div class="card" id="consentCard" style="display:none">
+      <div class="label" id="consentLabel">GUARDIAN REQUEST</div>
+      <div class="cardTitle" id="consentTitle" style="font-size:19px;line-height:1.35;margin-bottom:4px"></div>
+      <div class="cardSub" id="consentSub" style="margin-bottom:14px"></div>
+      <div id="consentActions">
+        <button class="bigBtn" id="consentAllowBtn">ALLOW · <span class="ar">اسمح</span></button>
+        <button class="bigBtn secondary" id="consentDenyBtn">DENY · <span class="ar">ارفض</span></button>
+      </div>
+      <button class="bigBtn dangerQuiet" id="consentStopBtn" style="display:none">STOP SHARING · <span class="ar">أوقف المشاركة</span></button>
     </div>
 
     <div class="card">
@@ -921,11 +959,118 @@ $("lrContact").addEventListener("click", () => window.open("mailto:hello@3ayn.ai
 $("lrPrivacy").addEventListener("click", () => setMsg("connMsg", "Privacy policy isn't published yet.", false));
 
 /* ---- guardian access requests ----
-   Intentionally NOT wired to /watch/* here - that state machine (request,
-   allow/deny, live frame + location) is being built separately. These
-   buttons are honest placeholders so the screen isn't silently broken. */
-$("gReqCam").addEventListener("click", () => setMsg("gCamMsg", "Camera sharing isn't connected yet.", false));
-$("gReqLoc").addEventListener("click", () => setMsg("gLocMsg", "Location sharing isn't connected yet.", false));
+   A guardian must first be "linked" to a wearer's watchId before they can
+   request anything - either the same device also holds that wearer's own
+   profile (their Trusted Viewer session is already running locally), or
+   they paste the link/code the wearer copied from Settings. Either way,
+   having the watchId alone gets a guardian nothing: the backend only ever
+   returns image/location once the wearer has explicitly approved. */
+let gPollTimer = null;
+
+function gLinkedWatchId(){ return (profile && profile.linkedWatchId) ? profile.linkedWatchId : null; }
+
+function extractWatchIdFromInput(v){
+  v = (v || "").trim();
+  if (!v) return null;
+  try { const u = new URL(v, location.href); const w = u.searchParams.get("w"); if (w) return w; }
+  catch(e){ /* not a URL - treat the raw text as the code below */ }
+  return v;
+}
+
+function sameDeviceWatchId(){
+  const wid = storeGet("threeayn_watchId");
+  const active = storeGet("threeayn_watchActive") === "1";
+  return (wid && active) ? wid : null;
+}
+
+function updateGuardianPairingUI(){
+  const linked = gLinkedWatchId();
+  $("gPairCard").style.display = linked ? "none" : "block";
+  $("gLinkedCards").style.display = linked ? "block" : "none";
+  $("gPairSameDevice").style.display = (!linked && sameDeviceWatchId()) ? "block" : "none";
+  if (linked) startGuardianPoll(); else stopGuardianPoll();
+}
+
+function linkGuardian(watchId){
+  if (!watchId || !profile) return;
+  profile.linkedWatchId = watchId;
+  saveProfiles();
+  $("gPairInput").value = "";
+  updateGuardianPairingUI();
+}
+
+$("gPairBtn").addEventListener("click", () => {
+  const wid = extractWatchIdFromInput($("gPairInput").value);
+  if (!wid){ setMsg("gPairMsg", "Paste a link or code first.", false); return; }
+  linkGuardian(wid);
+});
+$("gPairSameDevice").addEventListener("click", () => { const wid = sameDeviceWatchId(); if (wid) linkGuardian(wid); });
+$("gUnlinkBtn").addEventListener("click", () => {
+  if (!profile) return;
+  delete profile.linkedWatchId;
+  saveProfiles();
+  setMsg("gCamMsg", ""); setMsg("gLocMsg", "");
+  updateGuardianPairingUI();
+});
+
+async function guardianRequestAccess(msgId){
+  const wid = gLinkedWatchId();
+  const base = $("endpoint").value.trim();
+  if (!wid || !base) return;
+  setMsg(msgId, "Requesting…");
+  try{
+    const r = await fetch(base + "/watch/request", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ watchId: wid })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.message || "Request failed");
+    setMsg(msgId, "Waiting for them to respond…");
+  }catch(err){ setMsg(msgId, "Could not send the request: " + err.message, false); }
+}
+$("gReqCam").addEventListener("click", () => guardianRequestAccess("gCamMsg"));
+$("gReqLoc").addEventListener("click", () => guardianRequestAccess("gLocMsg"));
+
+function setGuardianShot(imgB64){
+  const el = $("gCamShot");
+  if (el.tagName === "IMG"){ el.src = "data:image/jpeg;base64," + imgB64; return; }
+  const img = document.createElement("img");
+  img.className = "accessShot"; img.id = "gCamShot";
+  img.src = "data:image/jpeg;base64," + imgB64;
+  el.replaceWith(img);
+}
+
+function startGuardianPoll(){
+  if (gPollTimer) return;
+  gPollTimer = setInterval(async () => {
+    const wid = gLinkedWatchId();
+    const base = $("endpoint").value.trim();
+    if (!wid || !base) return;
+    try{
+      const r = await fetch(base + "/watch/" + encodeURIComponent(wid));
+      if (!r.ok) return;
+      const d = await r.json();
+      const status = d.consentStatus || "idle";
+      if (status === "pending"){
+        setMsg("gCamMsg", "Waiting for them to respond…");
+        setMsg("gLocMsg", "Waiting for them to respond…");
+      } else if (status === "approved"){
+        setMsg("gCamMsg", "Sharing active", true);
+        setMsg("gLocMsg", "Sharing active", true);
+        if (d.image) setGuardianShot(d.image);
+        if (d.lat && d.lon){
+          $("gLocShot").innerHTML = `Lat ${Number(d.lat).toFixed(5)}, Lon ${Number(d.lon).toFixed(5)} · <a href="https://maps.google.com/?q=${d.lat},${d.lon}" target="_blank" rel="noopener">Open in Maps</a>`;
+        }
+      } else if (status === "denied"){
+        setMsg("gCamMsg", "Access denied", false);
+        setMsg("gLocMsg", "Access denied", false);
+      } else {
+        setMsg("gCamMsg", ""); setMsg("gLocMsg", "");
+      }
+    }catch(e){ /* one missed poll is fine */ }
+  }, 2000);
+}
+function stopGuardianPoll(){ if (gPollTimer){ clearInterval(gPollTimer); gPollTimer = null; } }
 
 /* ---------------- TTS ---------------- */
 function loadVoices(){
@@ -1407,6 +1552,7 @@ function applyProfile(){
   $("replayOnboardingBtn").style.display = isGuardian ? "none" : "";
   if (isGuardian && running) $("powerBtn").click();
   if (isGuardian && !$("screen-home").classList.contains("active")) show("home");
+  if (isGuardian) updateGuardianPairingUI(); else stopGuardianPoll();
 }
 
 function openWelcome(){
@@ -1839,7 +1985,115 @@ $("enSendBtn").addEventListener("click", async () => {
 /* ---------------- Trusted Viewer (consent-gated snapshot sharing) ---------------- */
 let watchId = storeGet("threeayn_watchId") || null;
 let watchActive = storeGet("threeayn_watchActive") === "1";
+let consentToken = storeGet("threeayn_consentToken") || null;
+let consentStatus = "idle";
+let consentPollTimer = null;
+let lastConsentRequestAt = "";
 let watchTimer = null;
+
+/* ---------------- Guardian consent card (wearer side) ----------------
+   Nothing is ever shared just because a guardian has the watchId - they
+   must request, and the wearer must explicitly Allow. This card is the
+   only place that decision gets made. */
+function guardianDisplayName(){
+  // if a guardian profile also lives on this device (same-phone pairing),
+  // greet the wearer with their actual name instead of a generic phrase
+  const g = (profiles || []).find(p => p.role === "guardian");
+  return g ? g.name : (lang === "ar" ? "ولي أمرك" : "Your guardian");
+}
+/* Arabic verbs must agree in gender with the guardian being referred to.
+   "ولي أمرك" (the generic fallback) is grammatically masculine, so that's
+   the default; a named guardian whose profile records "Female" (from Edit
+   profile) gets feminine conjugation instead. */
+function guardianIsFeminine(){
+  const g = (profiles || []).find(p => p.role === "guardian");
+  return !!(g && g.gender === "Female");
+}
+
+function renderConsentCard(){
+  const card = $("consentCard");
+  if (!card) return;
+  const name = guardianDisplayName();
+
+  if (consentStatus === "pending"){
+    card.style.display = "block";
+    $("consentLabel").innerHTML = 'GUARDIAN REQUEST · <span class="ar">طلب</span>';
+    $("consentTitle").textContent = lang === "ar" ? `${name} ${guardianIsFeminine() ? "تريد" : "يريد"} رؤية كاميرتك وموقعك` : `${name} wants to view your camera and location`;
+    $("consentSub").textContent = lang === "ar" ? "لن تتم مشاركة أي شيء حتى توافقي." : "3ayn will read this aloud. You choose what happens next.";
+    $("consentActions").style.display = "flex";
+    $("consentStopBtn").style.display = "none";
+  } else if (consentStatus === "approved"){
+    card.style.display = "block";
+    card.classList.add("consentActive");
+    $("consentLabel").innerHTML = 'SHARING ACTIVE · <span class="ar">المشاركة فعّالة</span>';
+    $("consentTitle").textContent = lang === "ar" ? `${name} ${guardianIsFeminine() ? "يمكنها" : "يمكنه"} الآن رؤية كاميرتك وموقعك` : `${name} can now see your camera and location`;
+    $("consentSub").textContent = lang === "ar" ? "عين ستعلن أثناء استمرار المشاركة." : "3ayn will announce while sharing stays active.";
+    $("consentActions").style.display = "none";
+    $("consentStopBtn").style.display = "block";
+  } else if (consentStatus === "denied"){
+    card.style.display = "block";
+    card.classList.remove("consentActive");
+    $("consentLabel").innerHTML = 'ACCESS DENIED · <span class="ar">تم رفض الوصول</span>';
+    $("consentTitle").textContent = lang === "ar" ? "لم تتم مشاركة أي شيء." : "Nothing was shared.";
+    $("consentSub").textContent = "";
+    $("consentActions").style.display = "none";
+    $("consentStopBtn").style.display = "none";
+    setTimeout(() => { if (consentStatus === "denied") card.style.display = "none"; }, 4000);
+  } else {
+    card.style.display = "none";
+    card.classList.remove("consentActive");
+  }
+}
+
+async function respondToConsent(decision){
+  if (!watchId || !consentToken) return;
+  const base = $("endpoint").value.trim();
+  if (!base) return;
+  try{
+    const r = await fetch(base + "/watch/consent", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ watchId, consentToken, decision })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.message || "Consent update failed");
+    consentStatus = d.consentStatus || decision;
+    renderConsentCard();
+    if (consentStatus === "approved"){
+      speakLocal(lang === "ar" ? "بدأت مشاركة الكاميرا والموقع" : "Camera and location sharing started", lang, 3);
+      startFrameLoop();
+    } else {
+      speakLocal(lang === "ar" ? "تم رفض الطلب. لا تتم مشاركة أي شيء" : "Request denied. Nothing is being shared", lang, 3);
+    }
+  }catch(err){
+    speakLocal(lang === "ar" ? "تعذر إرسال قرارك" : "Could not send your decision", lang, 3);
+  }
+}
+
+function startConsentPoll(){
+  if (consentPollTimer) return;
+  consentPollTimer = setInterval(async () => {
+    if (!watchActive || !watchId) return;
+    const base = $("endpoint").value.trim();
+    if (!base) return;
+    try{
+      const r = await fetch(base + "/watch/" + encodeURIComponent(watchId));
+      if (!r.ok) return;
+      const d = await r.json();
+      const next = d.consentStatus || "idle";
+      if (next === "pending" && d.requestedAt !== lastConsentRequestAt){
+        lastConsentRequestAt = d.requestedAt || String(Date.now());
+        const name = guardianDisplayName();
+        speakLocal(lang === "ar" ? `${name} تريد رؤية كاميرتك وموقعك. قولي اسمح أو ارفض` : `${name} wants to view your camera and location. Say Allow or Deny`, lang, 4);
+      }
+      if (next !== consentStatus){
+        consentStatus = next;
+        renderConsentCard();
+        if (consentStatus === "stopped") stopFrameLoop();
+      }
+    }catch(e){ /* one missed poll is fine, try again next tick */ }
+  }, 1500);
+}
+function stopConsentPoll(){ if (consentPollTimer){ clearInterval(consentPollTimer); consentPollTimer = null; } }
 
 function updateWatchUI(){
   $("watchTgl").classList.toggle("on", watchActive);
@@ -1875,7 +2129,7 @@ function startFrameLoop(){
   if (watchTimer) return;
   let inFlight = false;
   watchTimer = setInterval(async () => {
-    if (!watchActive || !watchId || !running) return;
+    if (!watchActive || !watchId || !running || consentStatus !== "approved") return;
     if (inFlight) return;   // never let a slow upload stack up behind the next tick
     const base = $("endpoint").value.trim();
     if (!base) return;
@@ -1892,7 +2146,24 @@ function startFrameLoop(){
   }, WATCH_INTERVAL_MS);
 }
 function stopFrameLoop(){ if (watchTimer){ clearInterval(watchTimer); watchTimer = null; } }
-if (watchActive) startFrameLoop();
+if (watchActive){ startConsentPoll(); renderConsentCard(); }
+
+$("consentAllowBtn").addEventListener("click", () => respondToConsent("allow"));
+$("consentDenyBtn").addEventListener("click", () => respondToConsent("deny"));
+$("consentStopBtn").addEventListener("click", async () => {
+  const base = $("endpoint").value.trim();
+  if (base && watchId){
+    try{ await fetch(base + "/watch/stop", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ watchId }) }); }catch(e){}
+  }
+  consentStatus = "stopped";
+  watchActive = false;
+  storeSet("threeayn_watchActive", "0");
+  stopFrameLoop();
+  stopConsentPoll();
+  renderConsentCard();
+  updateWatchUI();
+  speakLocal(lang === "ar" ? "تم إيقاف المشاركة" : "Sharing stopped", lang, 3);
+});
 
 $("watchTgl").addEventListener("click", async () => {
   const base = $("endpoint").value.trim();
@@ -1907,8 +2178,12 @@ $("watchTgl").addEventListener("click", async () => {
       const d = await r.json();
       if (!r.ok || !d.watchId) throw new Error(d.message || "Failed to start");
       watchId = d.watchId; watchActive = true;
-      storeSet("threeayn_watchId", watchId); storeSet("threeayn_watchActive", "1");
-      updateWatchUI(); startFrameLoop();
+      consentToken = d.consentToken || null;
+      consentStatus = "idle";
+      storeSet("threeayn_watchId", watchId);
+      storeSet("threeayn_consentToken", consentToken || "");
+      storeSet("threeayn_watchActive", "1");
+      updateWatchUI(); startConsentPoll(); renderConsentCard();
     }catch(err){ alert("Failed: " + err.message); }
   } else {
     try{
@@ -1918,8 +2193,11 @@ $("watchTgl").addEventListener("click", async () => {
       });
     }catch(e){}
     watchActive = false;
+    consentStatus = "idle";
     storeSet("threeayn_watchActive", "0");
     stopFrameLoop();
+    stopConsentPoll();
+    renderConsentCard();
     updateWatchUI();
   }
 });
