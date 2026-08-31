@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3ayn عين — hardware</title>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.184.0/build/three.module.js",
+    "three/addons/controls/OrbitControls.js": "https://unpkg.com/three@0.184.0/examples/jsm/controls/OrbitControls.js",
+    "three/addons/exporters/OBJExporter.js": "https://unpkg.com/three@0.184.0/examples/jsm/exporters/OBJExporter.js",
+    "three/addons/exporters/GLTFExporter.js": "https://unpkg.com/three@0.184.0/examples/jsm/exporters/GLTFExporter.js"
+  },
+  "integrity": {
+    "https://unpkg.com/three@0.184.0/build/three.module.js": "sha384-8FCZ1eVO6it4+pbec2aDtnTrwjWXZLJRC+MAGCIPDgsYnUrl/E0A2YlF8ioMKI/J",
+    "https://unpkg.com/three@0.184.0/build/three.core.js": "sha384-dw2ooPewaEIrAgl6oFDBmmBWCE9oW9LxRGcfwZ0hLvEprzo202wXl7vCYHRlSnOT",
+    "https://unpkg.com/three@0.184.0/examples/jsm/controls/OrbitControls.js": "sha384-4rziNxOBZKQ69i+w+f89KJ55TCYquwchVbByQwmaOeIOXdOU2PLDn3kOfXHwIJC9",
+    "https://unpkg.com/three@0.184.0/examples/jsm/exporters/OBJExporter.js": "sha384-nbwtoZENJD3Vq+ACK0CuGQdPMuDWHkamC2KJD70EV5nfg6jQjfppKOea07YJN+N3",
+    "https://unpkg.com/three@0.184.0/examples/jsm/exporters/GLTFExporter.js": "sha384-VofkvpG6HERhFCYbsUOHeNXBCqID2nfqkQqnVzE1jc/oPcz+qJ13ADdXH08hE+cQ"
+  }
+}
+</script>
+<link rel="stylesheet" href="_ds/modernist-80629be6-f361-4b96-9317-2532bb22fe29/styles.css">
+<style>
+  html, body { height: 100%; }
+  body { margin: 0; display: flex; flex-direction: column; overflow: hidden; }
+  .nav .sub { font-size: 14px; color: var(--color-neutral-600); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar {
+    display: flex; align-items: center; gap: var(--space-4);
+    padding: var(--space-2) var(--space-4);
+    border-bottom: 2px solid var(--color-divider);
+  }
+  .bar .seg { flex-shrink: 0; }
+  .bar .caption { font-size: 13px; color: var(--color-neutral-700); flex: 1; min-width: 0; }
+  .stage-wrap { flex: 1; min-height: 0; position: relative; }
+  three-d-stage { position: absolute; inset: 0; width: 100%; height: 100%; }
+  three-d-stage:not(:defined) { visibility: hidden; }
+</style>
+</head>
+<body>
+  <header class="nav">
+    <span class="nav-brand">3ayn <span style="color: var(--color-accent)">عين</span></span>
+    <span class="sub">Hardware — interactive 3D model · Amazon Industry Program 2026</span>
+  </header>
+  <div class="bar">
+    <div class="seg" role="radiogroup" aria-label="Object">
+      <label class="seg-opt"><input type="radio" name="obj" value="kit" checked>Kit</label>
+      <label class="seg-opt"><input type="radio" name="obj" value="glasses">Glasses</label>
+      <label class="seg-opt"><input type="radio" name="obj" value="cane">Cane</label>
+    </div>
+    <span class="caption" id="caption"></span>
+  </div>
+  <div class="stage-wrap">
+    <three-d-stage name="3ayn-kit" background="#f3f2f2" autorotate></three-d-stage>
+  </div>
+  <script src="three-d-stage.js"></script>
+  <script type="module">
+    const stage = document.querySelector('three-d-stage');
+    const { THREE } = await stage.ready;
+
+    const mat = (name, color, roughness, metalness, extra = {}) => {
+      const m = new THREE.MeshStandardMaterial({ color, roughness, metalness, ...extra });
+      m.name = name; return m;
+    };
+    const M = {
+      frame: mat('frame-matte-black', 0x24211f, 0.62, 0.05),
+      rubber: mat('grip-rubber', 0x1c1a19, 0.85, 0.0),
+      white: mat('cane-white', 0xf5f3ef, 0.34, 0.02),
+      red: mat('signal-red', 0xec3013, 0.42, 0.0),
+      metal: mat('gunmetal', 0x57534f, 0.34, 0.38),
+      lens: mat('lens-glass', 0x14161a, 0.06, 0.15, { transparent: true, opacity: 0.32 }),
+      optic: mat('optic-black', 0x0a0a0c, 0.08, 0.2),
+      led: (() => { const m = mat('led-red', 0xec3013, 0.3, 0.0);
+        m.emissive = new THREE.Color(0xec3013); m.emissiveIntensity = 0.9; return m; })(),
+    };
+    const mesh = (name, geo, material) => {
+      const ms = new THREE.Mesh(geo, material);
+      ms.name = name; ms.castShadow = true; ms.receiveShadow = true;
+      return ms;
+    };
+    const roundedRect = (w, h, r) => {
+      const s = new THREE.Shape(), x = -w / 2, y = -h / 2;
+      s.moveTo(x + r, y);
+      s.lineTo(x + w - r, y); s.quadraticCurveTo(x + w, y, x + w, y + r);
+      s.lineTo(x + w, y + h - r); s.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      s.lineTo(x + r, y + h); s.quadraticCurveTo(x, y + h, x, y + h - r);
+      s.lineTo(x, y + r); s.quadraticCurveTo(x, y, x + r, y);
+      return s;
+    };
+    const restOnGround = g => {
+      const b = new THREE.Box3().setFromObject(g);
+      g.position.y -= b.min.y;
+      return g;
+    };
+
+    // ————— GLASSES (meters, as-worn, front = +z) —————
+    function buildGlasses() {
+      const g = new THREE.Group(); g.name = '3ayn-glasses';
+
+      // rims
+      const rimShape = roundedRect(0.056, 0.046, 0.016);
+      rimShape.holes.push(roundedRect(0.048, 0.038, 0.013));
+      const rimGeo = new THREE.ExtrudeGeometry(rimShape, {
+        depth: 0.005, bevelEnabled: true, bevelThickness: 0.0008, bevelSize: 0.0008,
+        bevelSegments: 2, curveSegments: 24,
+      });
+      rimGeo.translate(0, 0, -0.0025);
+      for (const s of [-1, 1]) {
+        const rim = mesh(s < 0 ? 'rim-left' : 'rim-right', rimGeo, M.frame);
+        rim.position.x = s * 0.037; g.add(rim);
+        const lensGeo = new THREE.ExtrudeGeometry(roundedRect(0.047, 0.037, 0.0125),
+          { depth: 0.0015, bevelEnabled: false, curveSegments: 24 });
+        lensGeo.translate(0, 0, -0.00075);
+        const lens = mesh(s < 0 ? 'lens-left' : 'lens-right', lensGeo, M.lens);
+        lens.castShadow = false; lens.position.x = s * 0.037; g.add(lens);
+      }
+      // bridge + nose pads
+      const bridge = mesh('bridge', new THREE.BoxGeometry(0.02, 0.007, 0.005), M.frame);
+      bridge.position.set(0, 0.014, 0); g.add(bridge);
+      for (const s of [-1, 1]) {
+        const pad = mesh(s < 0 ? 'nose-pad-left' : 'nose-pad-right',
+          new THREE.BoxGeometry(0.0035, 0.01, 0.002), M.frame);
+        pad.position.set(s * 0.0105, -0.002, -0.0045);
+        pad.rotation.z = -s * 0.35; pad.rotation.y = s * 0.25; g.add(pad);
+      }
+      // endpieces, hinges, temples
+      for (const s of [-1, 1]) {
+        const side = s < 0 ? 'left' : 'right';
+        const end = mesh(`endpiece-${side}`, new THREE.BoxGeometry(0.005, 0.012, 0.011), M.frame);
+        end.position.set(s * 0.0635, 0.012, -0.004); g.add(end);
+        const hinge = mesh(`hinge-${side}`, new THREE.CylinderGeometry(0.0026, 0.0026, 0.011, 24), M.metal);
+        hinge.position.set(s * 0.0635, 0.012, -0.0095); g.add(hinge);
+        const temple = mesh(`temple-${side}`, new THREE.BoxGeometry(0.0045, 0.009, 0.116), M.frame);
+        temple.position.set(s * 0.0645, 0.011, -0.068); g.add(temple);
+        // ear hook: torus arc in the Z-Y plane, sweeping back + down
+        const R = 0.016, tube = 0.0033, arc = 0.8 * Math.PI;
+        const hookGeo = new THREE.TorusGeometry(R, tube, 14, 28, arc);
+        hookGeo.rotateZ(Math.PI / 2); hookGeo.rotateY(-Math.PI / 2);
+        const hook = mesh(`ear-hook-${side}`, hookGeo, M.frame);
+        hook.position.set(s * 0.0645, 0.011 - R, -0.124); g.add(hook);
+        const endA = Math.PI / 2 + arc;
+        const tip = new THREE.Vector3(Math.cos(endA) * R, Math.sin(endA) * R, 0)
+          .applyEuler(new THREE.Euler(0, -Math.PI / 2, 0));
+        const cap = mesh(`ear-tip-${side}`, new THREE.SphereGeometry(tube, 16, 12), M.frame);
+        cap.position.set(s * 0.0645 + tip.x, 0.011 - R + tip.y, -0.124 + tip.z); g.add(cap);
+        // bone-conduction pod on the inner face, near the ear
+        const pod = mesh(`bc-pod-${side}`, new THREE.CapsuleGeometry(0.0042, 0.024, 6, 14), M.frame);
+        pod.rotation.x = Math.PI / 2;
+        pod.position.set(s * 0.0602, 0.009, -0.098); g.add(pod);
+        const grille = mesh(`bc-grille-${side}`, new THREE.CylinderGeometry(0.0028, 0.0028, 0.001, 20), M.metal);
+        grille.rotation.z = Math.PI / 2;
+        grille.position.set(s * 0.0557, 0.009, -0.098); g.add(grille);
+      }
+      // camera at the right endpiece
+      const camBody = mesh('camera-body', new THREE.CylinderGeometry(0.0052, 0.0052, 0.005, 28), M.frame);
+      camBody.rotation.x = Math.PI / 2; camBody.position.set(0.0635, 0.012, 0.0045); g.add(camBody);
+      const camRing = mesh('camera-ring', new THREE.TorusGeometry(0.0047, 0.0011, 12, 28), M.red);
+      camRing.position.set(0.0635, 0.012, 0.0071); g.add(camRing);
+      const camLens = mesh('camera-lens', new THREE.CylinderGeometry(0.0031, 0.0031, 0.0012, 24), M.optic);
+      camLens.rotation.x = Math.PI / 2; camLens.position.set(0.0635, 0.012, 0.0072); g.add(camLens);
+      // status LED + touch strip on the right temple
+      const led = mesh('status-led', new THREE.CylinderGeometry(0.0012, 0.0012, 0.0012, 12), M.led);
+      led.rotation.z = Math.PI / 2; led.position.set(0.0672, 0.013, -0.03); g.add(led);
+      const strip = mesh('touch-strip', new THREE.BoxGeometry(0.0009, 0.0052, 0.03), M.metal);
+      strip.position.set(0.0671, 0.011, -0.052); g.add(strip);
+      // brand chip on the left temple
+      const chip = mesh('brand-chip', new THREE.BoxGeometry(0.0009, 0.0045, 0.011), M.red);
+      chip.position.set(-0.0671, 0.011, -0.04); g.add(chip);
+      return restOnGround(g);
+    }
+
+    // ————— CANE (folding white cane, y-up, tip at ground) —————
+    function buildCane() {
+      const g = new THREE.Group(); g.name = '3ayn-cane';
+      const seg = (name, rTop, rBot, y0, y1, material, radial = 36) => {
+        const h = y1 - y0;
+        const m = mesh(name, new THREE.CylinderGeometry(rTop, rBot, h, radial), material);
+        m.position.y = y0 + h / 2; g.add(m); return m;
+      };
+      // ceramic tip
+      const tipBall = mesh('tip-ball', new THREE.SphereGeometry(0.0115, 28, 20), M.red);
+      tipBall.position.y = 0.0115; g.add(tipBall);
+      seg('tip', 0.0105, 0.0118, 0.011, 0.052, M.red);
+      // red identification section, then white folding segments
+      seg('shaft-red', 0.009, 0.0095, 0.052, 0.165, M.red);
+      seg('shaft-1', 0.0089, 0.009, 0.165, 0.425, M.white);
+      seg('shaft-2', 0.0088, 0.0089, 0.425, 0.685, M.white);
+      seg('shaft-3', 0.0087, 0.0088, 0.685, 0.945, M.white);
+      for (const [i, y] of [0.165, 0.425, 0.685].entries()) {
+        const c = mesh(`joint-collar-${i + 1}`, new THREE.CylinderGeometry(0.0102, 0.0102, 0.015, 32), M.metal);
+        c.position.y = y; g.add(c);
+      }
+      // sensor module clamped ahead of the grip (faces forward, +z)
+      const clampY = [0.862, 0.918];
+      clampY.forEach((y, i) => {
+        const c = mesh(`clamp-ring-${i + 1}`, new THREE.CylinderGeometry(0.0125, 0.0125, 0.011, 32), M.frame);
+        c.position.y = y; g.add(c);
+      });
+      const module = new THREE.Group(); module.name = 'sensor-module';
+      const body = mesh('module-body', new THREE.BoxGeometry(0.034, 0.076, 0.021), M.frame);
+      body.position.set(0, 0.89, 0.0195); module.add(body);
+      const face = mesh('module-face', new THREE.BoxGeometry(0.03, 0.07, 0.002), M.rubber);
+      face.position.set(0, 0.89, 0.0305); module.add(face);
+      for (const s of [-1, 1]) {
+        const side = s < 0 ? 'left' : 'right';
+        const can = mesh(`ultrasonic-${side}`, new THREE.CylinderGeometry(0.0072, 0.0072, 0.011, 28), M.metal);
+        can.rotation.x = Math.PI / 2 + 0.22;
+        can.position.set(s * 0.0082, 0.9, 0.0335); module.add(can);
+        const dish = mesh(`ultrasonic-mesh-${side}`, new THREE.CylinderGeometry(0.0055, 0.0055, 0.0015, 24), M.optic);
+        dish.rotation.x = Math.PI / 2 + 0.22;
+        dish.position.set(s * 0.0082, 0.8988, 0.039); module.add(dish);
+      }
+      const ledStrip = mesh('module-led', new THREE.BoxGeometry(0.019, 0.0026, 0.0012), M.led);
+      ledStrip.position.set(0, 0.867, 0.0312); module.add(ledStrip);
+      const usb = mesh('usb-c', new THREE.BoxGeometry(0.0092, 0.0034, 0.002), M.optic);
+      usb.rotation.x = Math.PI / 2; usb.position.set(0, 0.8515, 0.0195); module.add(usb);
+      const logoChip = mesh('module-brand-chip', new THREE.BoxGeometry(0.0075, 0.0075, 0.0011), M.red);
+      logoChip.position.set(0.0095, 0.8665, 0.0312); module.add(logoChip);
+      g.add(module);
+      // ergonomic grip (lathe profile), thumb button, strap
+      const prof = [
+        [0.0092, 0.945], [0.0128, 0.958], [0.0150, 0.985], [0.0158, 1.015],
+        [0.0155, 1.045], [0.0138, 1.072], [0.0128, 1.088], [0.0142, 1.100],
+        [0.0128, 1.110], [0.0, 1.117],
+      ].map(([r, y]) => new THREE.Vector2(r, y));
+      const grip = mesh('grip', new THREE.LatheGeometry(prof, 40), M.rubber);
+      g.add(grip);
+      const collar = mesh('grip-collar', new THREE.TorusGeometry(0.0122, 0.0014, 12, 32), M.red);
+      collar.rotation.x = Math.PI / 2; collar.position.y = 0.947; g.add(collar);
+      const btn = mesh('haptic-button', new THREE.CylinderGeometry(0.0042, 0.0042, 0.0022, 24), M.red);
+      btn.rotation.x = Math.PI / 2; btn.position.set(0, 1.05, 0.0152); g.add(btn);
+      const strap = mesh('wrist-strap', new THREE.TorusGeometry(0.021, 0.0022, 10, 36), M.rubber);
+      strap.position.y = 1.128; g.add(strap);
+      return g;
+    }
+
+    // ————— assemble + switcher —————
+    const glasses = buildGlasses();
+    const cane = buildCane();
+    const kit = new THREE.Group(); kit.name = '3ayn-kit';
+    const caneK = cane.clone(true); caneK.position.x = -0.16; kit.add(caneK);
+    const glassesK = glasses.clone(true);
+    glassesK.position.x = 0.15; glassesK.rotation.y = -0.55; kit.add(glassesK);
+
+    const captions = {
+      kit: 'The 3ayn wearable kit — camera glasses for on-device social narration, cane with ultrasonic ranging.',
+      glasses: 'Camera at the right hinge feeds pose detection; bone-conduction pods narrate in Arabic, ears stay open.',
+      cane: 'Folding white cane — ESP32 + dual ultrasonic module ahead of the grip, haptic pulse under the thumb.',
+    };
+    const objects = { kit, glasses, cane };
+    const caption = document.getElementById('caption');
+    function select(key) {
+      stage.setAttribute('name', objects[key].name);
+      stage.setObject(objects[key]);
+      caption.textContent = captions[key];
+    }
+    document.querySelectorAll('input[name="obj"]').forEach(r =>
+      r.addEventListener('change', () => select(r.value)));
+    select('kit');
+  </script>
+</body>
+</html>

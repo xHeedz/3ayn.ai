@@ -165,6 +165,10 @@ one file. Region is **eu-west-2**.
 │   ├── README.md                 endpoint contracts, smoke tests, costs
 │   └── bcknd/ThreeAynFunction/   Java 21 Maven module, 8 handlers
 │
+├── hardware/                   ← drawings + interactive 3D viewer, both devices
+│   ├── drawing-set/index.html    dimensioned technical drawings
+│   └── viewer/index.html         rotate and inspect in 3D
+│
 ├── prototypes/
 │   └── distance-direction/     ← Python, runs on a laptop, not in the app yet
 │       ├── steps/                geometry, announcer, pipeline
@@ -397,11 +401,20 @@ python calibrate.py                    # measure your step length first
 python live.py
 ```
 
-### Hardware, designed but not built
+### Hardware
 
-Two companion devices are specified below. Nothing has been fabricated and there
-are no CAD files in this repo yet. This is the parts list and the reasoning
-behind it, written down so the design survives.
+Two companion devices, fully specified and drawn, neither fabricated. Both live
+in `hardware/` with their own README.
+
+| File | What it is |
+|---|---|
+| `hardware/drawing-set/index.html` | Dimensioned technical drawing set, both devices |
+| `hardware/viewer/index.html` | Interactive 3D viewer, rotate and inspect both |
+| `hardware/3ayn-glasses.obj` `.mtl` `.glb` | Glasses geometry, exported from the viewer |
+
+Both pages are self-contained and open in any browser from a local clone.
+GitHub renders HTML as source, so they will not display from github.com
+directly.
 
 **`3AYN-CN-01`, the cane. It feels.**
 
@@ -440,11 +453,11 @@ hit the obstacle.
 Safety events still publish to AWS afterwards, so the activity log stays
 complete. The warning itself is never delayed by it.
 
-**Where the hardware actually stands.** The Pi 3 board is confirmed dead, a
-4-blink firmware failure. The Pi 2 boots but is ethernet only. Camera Module v1
-is detected over I²C yet times out on the CSI data lanes, most likely a faulty
-ribbon cable. That's a $3 part and it's still unresolved, which is why none of
-the above has been prototyped in the physical world.
+**Build status.** Nothing has been fabricated, and the blocker is a hardware
+fault rather than the design. The Pi 3 board is confirmed dead, a 4-blink
+firmware failure. The Pi 2 boots but is ethernet only. Camera Module v1 is
+detected over I²C yet times out on the CSI data lanes, most likely a faulty
+ribbon cable. That is a $3 part and it is still unresolved.
 
 ### `docs/`
 

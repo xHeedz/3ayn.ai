@@ -1,0 +1,37 @@
+# Exported by three-d-stage
+newmtl frame-matte-black
+Kd 0.0176 0.0152 0.0137
+Ks 0.2000 0.2000 0.2000
+Ns 76
+d 1.0000
+
+newmtl lens-glass
+Kd 0.0070 0.0080 0.0103
+Ks 0.2000 0.2000 0.2000
+Ns 188
+d 0.3200
+
+newmtl gunmetal
+Kd 0.0953 0.0865 0.0782
+Ks 0.2000 0.2000 0.2000
+Ns 132
+d 1.0000
+
+newmtl signal-red
+Kd 0.8388 0.0296 0.0065
+Ks 0.2000 0.2000 0.2000
+Ns 116
+d 1.0000
+
+newmtl optic-black
+Kd 0.0030 0.0030 0.0037
+Ks 0.2000 0.2000 0.2000
+Ns 184
+d 1.0000
+
+newmtl led-red
+Kd 0.8388 0.0296 0.0065
+Ks 0.2000 0.2000 0.2000
+Ns 140
+d 1.0000
+
