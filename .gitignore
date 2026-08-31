@@ -5,3 +5,13 @@ dependency-reduced-pom.xml
 
 3ayn-backend old/
 files old/
+
+# Python prototype
+prototypes/**/.venv/
+prototypes/**/__pycache__/
+prototypes/**/.pytest_cache/
+prototypes/**/*.pt
+prototypes/**/*.onnx
+
+# Video is too big for git, it goes on the release instead
+docs/*.mp4
