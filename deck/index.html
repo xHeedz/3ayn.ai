@@ -1,0 +1,1621 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="3ayn — real-time, Arabic-first social awareness for blind and low-vision users. Amazon Industry Program 2026, Team AmazByte, American University of Beirut.">
+<meta name="author" content="Team AmazByte — American University of Beirut">
+<meta name="theme-color" content="#131C27">
+<meta property="og:type" content="website">
+<meta property="og:title" content="3ayn عين — Arabic-first sight for blind and low-vision users">
+<meta property="og:description" content="It narrates the moment something happens. In Arabic. Hands-free. Amazon Industry Program 2026 · Team AmazByte · AUB.">
+<meta property="og:image" content="og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='13' fill='%23232F3E'/><path d='M7 32s10-15 25-15 25 15 25 15-10 15-25 15S7 32 7 32z' fill='none' stroke='%23FF9900' stroke-width='4.5' stroke-linejoin='round'/><circle cx='32' cy='32' r='7.5' fill='%230FA78F'/></svg>">
+<style>
+  html,body{margin:0;padding:0}
+  img{max-width:100%}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<title>3ayn عين</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* ============================================================
+   3ayn — tri-brand deck
+   Amazon-led: Squid Ink #232F3E + Amazon Orange #FF9900
+   IEEE WiE Purple #772583 · AUB Berytus Red #840132
+   Product teal #0FA78F preserved from 3ayn's own identity
+   ============================================================ */
+:root{
+  --ink:#0E151E; --stage:#131C27; --panel:#1A2432; --panel-2:#202C3C; --panel-3:#27354a;
+  --line:#2E3D50; --line-soft:#233043;
+  --tx:#F3F6F9; --tx-2:#B3C0D0; --tx-3:#7E8FA6;
+  --amber:#FF9900; --amber-d:#CC7A0A; --amber-soft:#FFC26B;
+  --squid:#232F3E;
+  --wie:#9D6BE8; --wie-deep:#772583;
+  --aub:#E2506B; --aub-deep:#840132;
+  --sight:#0FA78F; --sight-lift:#2FD3B6;
+  --focus:#FF9900;
+  --sh:0 18px 46px -12px rgba(0,0,0,.62);
+  --r:14px;
+  --f-d:"Fraunces",Georgia,"Times New Roman",serif;
+  --f-s:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --f-a:"IBM Plex Sans Arabic","IBM Plex Sans",sans-serif;
+  --f-m:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+/* --- High-contrast mode: the product's own thesis, applied to the deck --- */
+[data-hc="on"]{
+  --ink:#000; --stage:#000; --panel:#000; --panel-2:#0A0A0A; --panel-3:#141414;
+  --line:#FFD400; --line-soft:#4A3D00;
+  --tx:#FFFFFF; --tx-2:#FFFFFF; --tx-3:#E4E4E4;
+  --amber:#FFD400; --amber-d:#FFD400; --amber-soft:#FFD400;
+  --wie:#FFD400; --aub:#FFD400; --sight:#FFD400; --sight-lift:#FFD400;
+  --sh:0 0 0 2px #FFD400;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--ink); color:var(--tx);
+  font-family:var(--f-s); -webkit-font-smoothing:antialiased;
+  overflow:hidden;
+}
+:focus-visible{outline:3px solid var(--focus); outline-offset:3px; border-radius:4px}
+
+/* ---------------- viewport + fixed 16:9 stage ---------------- */
+.viewport{position:fixed;inset:0;display:grid;place-items:center;overflow:hidden;background:var(--ink)}
+.stage{
+  width:1600px;height:900px;position:relative;flex:none;
+  background:
+    radial-gradient(1100px 620px at 78% -8%, rgba(255,153,0,.10), transparent 62%),
+    radial-gradient(880px 520px at 6% 104%, rgba(119,37,131,.20), transparent 66%),
+    var(--stage);
+  overflow:hidden;
+}
+[data-hc="on"] .stage{background:#000}
+
+/* ---------------- slides ---------------- */
+.slide{
+  position:absolute;inset:0;padding:74px 92px 96px;
+  opacity:0;pointer-events:none;visibility:hidden;
+  transition:opacity .42s ease, transform .42s cubic-bezier(.22,.9,.3,1);
+  transform:translateY(16px) scale(.995);
+  display:flex;flex-direction:column;
+}
+.slide.is-active{opacity:1;pointer-events:auto;visibility:visible;transform:none}
+
+/* eyebrow / headline / deck typography */
+.eyebrow{
+  font-family:var(--f-m);font-size:12.5px;font-weight:600;letter-spacing:.19em;
+  text-transform:uppercase;color:var(--amber);margin:0 0 14px;display:flex;align-items:center;gap:11px;
+}
+.eyebrow::before{content:"";width:26px;height:2px;background:var(--amber);flex:none}
+h1.head{
+  font-family:var(--f-d);font-optical-sizing:auto;font-weight:600;
+  font-size:60px;line-height:1.03;letter-spacing:-.021em;margin:0 0 16px;
+  color:var(--tx);text-wrap:balance;max-width:15ch;
+}
+h1.head.wide{max-width:22ch}
+h1.head.sm{font-size:49px;max-width:19ch}
+.dek{font-size:17.5px;line-height:1.56;color:var(--tx-2);max-width:60ch;margin:0 0 6px}
+.dek strong{color:var(--tx);font-weight:600}
+.dek em{color:var(--tx-3);font-style:italic}
+.note-line{font-size:15px;line-height:1.55;color:var(--tx-3);font-style:italic;max-width:62ch}
+.hl{color:var(--sight-lift);font-weight:600}
+.ar{font-family:var(--f-a);direction:rtl;unicode-bidi:isolate}
+
+/* two-column body */
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:56px;flex:1;min-height:0;align-items:start}
+.cols.l{grid-template-columns:1.06fr .94fr}
+.cols.r{grid-template-columns:.86fr 1.14fr}
+.colstack{display:flex;flex-direction:column;gap:18px;min-width:0}
+
+/* ---------------- chrome: rails, dots, bars ---------------- */
+.brandrail{position:absolute;left:0;top:0;bottom:0;width:6px;
+  background:linear-gradient(180deg,var(--squid) 0%,var(--wie-deep) 46%,var(--aub-deep) 100%);z-index:6}
+[data-hc="on"] .brandrail{background:#FFD400}
+.railfill{position:absolute;left:0;top:0;width:6px;background:var(--amber);z-index:7;
+  transition:height .42s cubic-bezier(.22,.9,.3,1);box-shadow:0 0 16px rgba(255,153,0,.6)}
+.dots{position:absolute;right:26px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:9px;z-index:8}
+.dot{width:8px;height:8px;border-radius:50%;border:0;padding:0;cursor:pointer;background:var(--line);
+  transition:.22s;position:relative}
+.dot:hover{background:var(--tx-3);transform:scale(1.35)}
+.dot.on{background:var(--amber);box-shadow:0 0 0 4px rgba(255,153,0,.18);transform:scale(1.3)}
+.slug{position:absolute;top:26px;right:26px;display:flex;align-items:center;gap:14px;z-index:8;
+  font-family:var(--f-m);font-size:11.5px;letter-spacing:.13em;color:var(--tx-3);text-transform:uppercase}
+.slug b{color:var(--amber);font-weight:600}
+.pagenum{position:absolute;left:92px;bottom:34px;font-family:var(--f-m);font-size:12px;
+  letter-spacing:.14em;color:var(--tx-3);z-index:8}
+.pagenum i{color:var(--tx);font-style:normal;font-weight:600}
+
+/* narration strip — the deck narrates itself, like the product */
+.narr{position:absolute;left:92px;right:150px;bottom:64px;z-index:8;display:flex;align-items:center;gap:14px;
+  min-height:24px;pointer-events:none}
+.narr .eye{width:19px;height:19px;flex:none;border-radius:50%;border:1.5px solid var(--sight);
+  display:grid;place-items:center;position:relative}
+.narr .eye::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--sight);
+  animation:blink 3.4s ease-in-out infinite}
+@keyframes blink{0%,88%,100%{transform:scaleY(1)}93%{transform:scaleY(.12)}}
+.narr .txt{font-size:13.5px;color:var(--tx-3);letter-spacing:.005em}
+.narr .txt .a{font-family:var(--f-a);color:var(--sight-lift);margin-inline-end:10px}
+.narr.speaking .eye{box-shadow:0 0 0 5px rgba(15,167,143,.2)}
+
+/* controls */
+.ctl{position:absolute;right:26px;bottom:26px;display:flex;gap:7px;z-index:9}
+.cbtn{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--panel);
+  color:var(--tx-2);cursor:pointer;display:grid;place-items:center;font-family:var(--f-m);
+  font-size:11px;font-weight:600;transition:.18s;padding:0}
+.cbtn:hover{border-color:var(--amber);color:var(--amber);transform:translateY(-2px)}
+.cbtn.on{background:var(--amber);color:#12181F;border-color:var(--amber)}
+[data-hc="on"] .cbtn.on{color:#000}
+
+/* ---------------- generic surfaces ---------------- */
+.panel{background:var(--panel);border:1px solid var(--line-soft);border-radius:var(--r);padding:20px 22px}
+.stat{display:flex;flex-direction:column;gap:3px}
+.stat .n{font-family:var(--f-d);font-weight:600;font-size:52px;line-height:1;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;color:var(--sight-lift)}
+.stat .n.amb{color:var(--amber)}
+.stat .l{font-size:12.5px;color:var(--tx-3);line-height:1.4;max-width:22ch}
+.statrow{display:flex;gap:44px;align-items:flex-end;flex-wrap:wrap}
+
+/* keyed list */
+.klist{display:flex;flex-direction:column;gap:0;margin:0;padding:0;list-style:none}
+.klist li{display:grid;grid-template-columns:1fr auto 1.05fr;gap:16px;align-items:center;
+  padding:13px 0;border-bottom:1px solid var(--line-soft)}
+.klist li:last-child{border-bottom:0}
+.klist .p{font-size:14.5px;color:var(--tx-3);font-style:italic}
+.klist .arw{color:var(--amber);font-family:var(--f-m);font-size:14px}
+.klist .s{font-size:14.5px;color:var(--tx);font-weight:600}
+
+/* data table */
+.dtable{width:100%;border-collapse:collapse;font-size:14px}
+.dtable th{text-align:left;font-family:var(--f-m);font-size:10.5px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--tx-3);font-weight:600;padding:0 0 9px;border-bottom:1.5px solid var(--amber)}
+.dtable td{padding:10.5px 0;border-bottom:1px solid var(--line-soft);color:var(--tx-2);vertical-align:top}
+.dtable td:first-child{color:var(--tx);font-weight:600;width:118px;padding-right:16px}
+.dtable tr:last-child td{border-bottom:0}
+.mono{font-family:var(--f-m);font-size:13px}
+
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-family:var(--f-m);font-size:11.5px;letter-spacing:.05em;padding:6px 11px;border-radius:999px;
+  border:1px solid var(--line);color:var(--tx-2);background:var(--panel);white-space:nowrap}
+.chip.k{border-color:var(--sight);color:var(--sight-lift)}
+.chip.w{border-color:var(--wie);color:var(--wie)}
+.chip.a{border-color:var(--amber);color:var(--amber)}
+
+/* legend */
+.legend{display:flex;gap:20px;flex-wrap:wrap;font-size:12.5px;color:var(--tx-2);align-items:center}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.legend i{width:11px;height:11px;border-radius:3px;display:block;flex:none}
+</style>
+<style>
+/* ============================================================
+   THE PHONE — rebuilt as live vector DOM, not a screenshot.
+   Every 3ayn screen below is real text, real type, real Arabic.
+   ============================================================ */
+.phone{
+  width:308px;flex:none;border-radius:34px;padding:9px;
+  background:linear-gradient(168deg,var(--panel-3),var(--panel));
+  border:1px solid var(--line);box-shadow:var(--sh);position:relative;
+}
+.phone.sm{width:236px;border-radius:27px;padding:7px}
+.pscreen{
+  background:#FBF9F4;border-radius:26px;overflow:hidden;height:498px;
+  display:flex;flex-direction:column;position:relative;color:#0F2038;
+  font-size:12px;
+}
+.phone.sm .pscreen{height:392px;border-radius:21px;font-size:10.5px}
+.pscreen.dark{background:#000;color:#fff}
+/* tab bar */
+.ptabs{display:flex;gap:3px;padding:9px 8px;background:#F1EEE7;flex:none}
+.pscreen.dark .ptabs{background:#000;border-bottom:1px solid #FFD400}
+.ptab{flex:1;border:0;background:none;font-family:var(--f-s);font-size:9.5px;font-weight:600;
+  color:#5A6B80;padding:6px 2px;border-radius:999px;cursor:pointer;transition:.16s;letter-spacing:.01em}
+.ptab:hover{color:#0F2038}
+.ptab.on{background:#16233A;color:#fff}
+.pscreen.dark .ptab{color:#FFD400}
+.pscreen.dark .ptab.on{background:#FFD400;color:#000}
+/* header row */
+.phead{display:flex;justify-content:space-between;align-items:center;padding:11px 14px 4px;flex:none}
+.phead .t{font-family:var(--f-m);font-size:9px;color:#7A8798;letter-spacing:.04em}
+.pscreen.dark .phead .t{color:#CFCFCF}
+.phead .brand{font-family:var(--f-a);font-size:14px;font-weight:600;color:#16233A}
+.pscreen.dark .phead .brand{color:#FFD400}
+.pbody{padding:2px 14px 14px;overflow:hidden;flex:1;display:flex;flex-direction:column;gap:9px}
+.pgreet{font-family:var(--f-a);font-size:21px;font-weight:600;color:#16233A;margin:0;line-height:1.2}
+.pscreen.dark .pgreet{color:#fff}
+.pgreet .lat{font-family:var(--f-s);font-weight:600}
+/* generic card in phone */
+.pcard{background:#fff;border-radius:11px;padding:9px 11px;border:1px solid #E7E2D8}
+.pscreen.dark .pcard{background:#0C0C0C;border-color:#FFD400}
+.plabel{font-family:var(--f-m);font-size:7.5px;letter-spacing:.15em;text-transform:uppercase;color:#8D99A8;margin:0 0 4px}
+.pscreen.dark .plabel{color:#FFD400}
+.prow{display:flex;align-items:center;gap:9px}
+.pdot{width:24px;height:24px;border-radius:50%;background:#EDF3F1;display:grid;place-items:center;flex:none;
+  font-size:11px;color:#0FA78F}
+.pscreen.dark .pdot{background:#1A1A00;color:#FFD400}
+.pttl{font-size:11.5px;font-weight:600;color:#16233A;margin:0}
+.pscreen.dark .pttl{color:#fff}
+.psub{font-size:9px;color:#7A8798;margin:1px 0 0}
+.pscreen.dark .psub{color:#D8D8D8}
+.pon{margin-left:auto;font-size:8.5px;font-weight:600;color:#0FA78F;display:flex;align-items:center;gap:4px}
+.pon::before{content:"";width:5px;height:5px;border-radius:50%;background:#0FA78F;
+  animation:pulse 1.9s ease-in-out infinite}
+.pscreen.dark .pon{color:#FFD400}
+.pscreen.dark .pon::before{background:#FFD400}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.72)}}
+.parab{font-family:var(--f-a);direction:rtl;font-size:14px;font-weight:600;color:#16233A;text-align:right;
+  line-height:1.5;margin:0}
+.pscreen.dark .parab{color:#fff}
+.pen{font-size:8.5px;color:#7A8798;text-align:right;margin:2px 0 0}
+.pscreen.dark .pen{color:#D8D8D8}
+/* quick actions */
+.pquad{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.pq{background:#fff;border:1px solid #E7E2D8;border-radius:10px;padding:8px 3px;text-align:center;
+  font-size:8.5px;font-weight:600;color:#16233A;cursor:pointer}
+.pq span{display:block;font-size:12px;margin-bottom:2px;color:#0FA78F}
+.pscreen.dark .pq{background:#0C0C0C;border-color:#FFD400;color:#fff}
+.pscreen.dark .pq span{color:#FFD400}
+/* live view */
+.plive{border-radius:10px;overflow:hidden;background:#16233A;min-height:82px;position:relative;flex:1 1 auto}
+.plive canvas{display:block;width:100%;height:100%}
+.plive .tag{position:absolute;left:7px;bottom:6px;font-family:var(--f-m);font-size:7.5px;
+  color:#fff;background:rgba(0,0,0,.55);padding:2px 6px;border-radius:4px;letter-spacing:.06em}
+/* event log */
+.plog{display:flex;flex-direction:column;gap:0;overflow:hidden;flex:1;min-height:0}
+.plog .ev{display:flex;gap:7px;padding:5px 0;border-bottom:1px solid #EEE9DF;align-items:baseline;
+  animation:evin .5s ease both}
+.pscreen.dark .plog .ev{border-color:#3A3200}
+@keyframes evin{from{opacity:0;transform:translateY(-7px)}to{opacity:1;transform:none}}
+.plog .tm{font-family:var(--f-m);font-size:7.5px;color:#8D99A8;flex:none;padding-top:2px}
+.pscreen.dark .plog .tm{color:#FFD400}
+.plog .ar2{font-family:var(--f-a);direction:rtl;font-size:10.5px;font-weight:600;color:#16233A;flex:1;text-align:right}
+.pscreen.dark .plog .ar2{color:#fff}
+.plog .en2{font-size:8px;color:#7A8798;flex:1}
+.pscreen.dark .plog .en2{color:#D8D8D8}
+/* buttons in phone */
+.pbtn{display:block;width:100%;border:0;border-radius:9px;padding:9px;font-family:var(--f-s);
+  font-size:10.5px;font-weight:600;cursor:pointer;margin-bottom:6px;text-align:center}
+.pbtn.pri{background:#16233A;color:#fff}
+.pbtn.sec{background:#E9F1FA;color:#16233A}
+.pbtn.ok{background:#0FA78F;color:#fff}
+.pbtn.no{background:#fff;color:#16233A;border:1px solid #D8D2C6}
+.pscreen.dark .pbtn.pri,.pscreen.dark .pbtn.ok{background:#FFD400;color:#000}
+.pscreen.dark .pbtn.sec,.pscreen.dark .pbtn.no{background:#000;color:#FFD400;border:1px solid #FFD400}
+.pbtn .ara{font-family:var(--f-a)}
+.pinput{width:100%;border:1px solid #E0DACE;border-radius:9px;padding:8px 10px;font-size:9.5px;
+  color:#7A8798;background:#fff;margin-bottom:7px}
+.pscreen.dark .pinput{background:#000;border-color:#FFD400;color:#FFD400}
+.ptoggle{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #EEE9DF}
+.pscreen.dark .ptoggle{border-color:#3A3200}
+.psw{margin-left:auto;width:30px;height:17px;border-radius:999px;background:#0FA78F;position:relative;flex:none;
+  cursor:pointer;transition:.2s;border:0;padding:0}
+.psw::after{content:"";position:absolute;top:2px;left:15px;width:13px;height:13px;border-radius:50%;
+  background:#fff;transition:.2s}
+.psw.off{background:#D3D8DE}
+.psw.off::after{left:2px}
+.pscreen.dark .psw{background:#FFD400}
+.pscreen.dark .psw::after{background:#000}
+/* waveform */
+.pwave{display:flex;align-items:flex-end;justify-content:center;gap:2.5px;height:22px;flex:none}
+.pwave i{width:3px;background:#0FA78F;border-radius:2px;display:block;animation:wv 1.05s ease-in-out infinite}
+.pscreen.dark .pwave i{background:#FFD400}
+@keyframes wv{0%,100%{height:4px;opacity:.5}50%{height:20px;opacity:1}}
+.pcap{text-align:center;font-family:var(--f-m);font-size:11px;color:var(--tx-3);margin-top:11px;letter-spacing:.03em}
+.pcap b{color:var(--sight-lift);font-weight:600}
+
+/* ---------------- screen grid (slide 8/9/12) ---------------- */
+.screengrid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;align-items:start}
+.sgcell{display:flex;flex-direction:column;gap:9px;align-items:center}
+.sgcap{font-family:var(--f-m);font-size:11px;color:var(--tx-2);letter-spacing:.04em;text-align:center;
+  display:flex;align-items:center;gap:7px}
+.sgcap b{color:var(--amber);font-weight:600}
+
+/* ---------------- architecture ---------------- */
+.archwrap{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px}
+.arch{width:100%;height:100%;display:block}
+.arch .nd{fill:var(--panel);stroke:var(--line);stroke-width:1.2}
+.arch .nd.hot{stroke:var(--amber);stroke-width:1.8}
+.arch .nt{fill:var(--tx);font-family:var(--f-s);font-size:12.5px;font-weight:600}
+.arch .ns{fill:var(--tx-3);font-family:var(--f-s);font-size:10.5px}
+.arch .colttl{fill:var(--tx-3);font-family:var(--f-m);font-size:10.5px;letter-spacing:.15em;font-weight:600}
+.arch .wire{stroke:var(--line);stroke-width:1.4;fill:none}
+.arch .wire.up{stroke:var(--sight)}
+.arch .wire.dn{stroke:var(--amber)}
+.arch .wlab{font-family:var(--f-m);font-size:9.5px;letter-spacing:.06em}
+.gw{fill:var(--squid);stroke:var(--amber);stroke-width:1.6}
+[data-hc="on"] .gw{fill:#000}
+.pkt{r:5}
+.pkt.u{fill:var(--sight-lift)}
+.pkt.d{fill:var(--amber)}
+
+/* ---------------- charts ---------------- */
+.chart{width:100%;display:block;overflow:visible}
+.chart text{font-family:var(--f-s)}
+.axlab{fill:var(--tx-3);font-family:var(--f-m);font-size:10.5px;letter-spacing:.08em}
+.vlab{fill:var(--tx);font-family:var(--f-m);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.slab{fill:var(--tx-3);font-family:var(--f-s);font-size:11px}
+.grid{stroke:var(--line-soft);stroke-width:1}
+/* price collapse */
+.priceflow{display:flex;align-items:flex-end;gap:26px;flex-wrap:wrap}
+.pf{display:flex;flex-direction:column;gap:5px}
+.pf .v{font-family:var(--f-d);font-weight:600;font-size:46px;line-height:1;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums}
+.pf .v.a{color:var(--tx-3)} .pf .v.b{color:var(--tx-2)} .pf .v.c{color:var(--amber);font-size:56px}
+.pf .l{font-size:11.5px;color:var(--tx-3);max-width:15ch;line-height:1.4}
+.pfarw{font-family:var(--f-m);color:var(--amber);font-size:20px;padding-bottom:24px}
+/* market rings */
+.rings{display:flex;flex-direction:column;gap:11px;align-items:center;width:100%}
+.ring{border-radius:11px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;
+  transition:.5s cubic-bezier(.22,.9,.3,1);border:1px solid transparent}
+.ring b{font-size:15px;font-weight:600}
+.ring span{font-family:var(--f-m);font-size:11.5px;opacity:.85}
+.ring.r1{width:100%;background:var(--panel-2);color:var(--tx-3);border-color:var(--line-soft)}
+.ring.r2{width:82%;background:var(--wie-deep);color:#F0E6F4;border-color:var(--wie)}
+.ring.r3{width:64%;background:var(--sight);color:#052620;border-color:var(--sight-lift)}
+[data-hc="on"] .ring{background:#000!important;color:#FFD400!important;border-color:#FFD400!important}
+
+/* competitor matrix */
+.matrix{position:relative;width:100%;aspect-ratio:1.14/1;border:1px solid var(--line-soft);border-radius:12px;
+  background:var(--panel);overflow:visible}
+.mx-mid{position:absolute;background:var(--line-soft)}
+.mpt{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;
+  gap:5px;cursor:default}
+.mpt .d{width:11px;height:11px;border-radius:50%;background:var(--tx-3);box-shadow:0 0 0 3px var(--panel)}
+.mpt .n{font-size:11px;color:var(--tx-3);text-align:center;line-height:1.3;white-space:nowrap}
+.mpt.us .d{width:17px;height:17px;background:var(--amber);box-shadow:0 0 0 5px rgba(255,153,0,.2)}
+.mpt.us .n{color:var(--amber);font-weight:700;font-size:23px;font-family:var(--f-d);letter-spacing:-.01em}
+.mxax{position:absolute;font-family:var(--f-m);font-size:10px;letter-spacing:.11em;color:var(--tx-3);
+  text-transform:uppercase}
+
+/* ---------------- accessibility theatre ---------------- */
+.cmeter{display:flex;flex-direction:column;gap:9px}
+.crow{display:grid;grid-template-columns:1fr auto auto;gap:14px;align-items:center;padding:10px 12px;
+  border-radius:10px;border:1px solid var(--line-soft);background:var(--panel)}
+.crow .sw{display:flex;align-items:center;gap:9px;font-size:13px}
+.crow .sw i{width:26px;height:26px;border-radius:6px;flex:none;display:block;border:1px solid var(--line)}
+.crow .ratio{font-family:var(--f-m);font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--tx)}
+.crow .verdict{font-family:var(--f-m);font-size:10px;letter-spacing:.11em;padding:3px 8px;border-radius:5px;
+  font-weight:600;white-space:nowrap}
+.crow .verdict.ok{background:rgba(15,167,143,.15);color:var(--sight-lift);border:1px solid var(--sight)}
+.crow .verdict.no{background:rgba(226,80,107,.15);color:var(--aub);border:1px solid var(--aub)}
+[data-hc="on"] .crow .verdict.ok,[data-hc="on"] .crow .verdict.no{background:#000;color:#FFD400;border-color:#FFD400}
+
+/* ---------------- hardware ---------------- */
+.hw{width:100%;height:100%;display:block}
+.hw .ln{stroke:var(--tx-2);stroke-width:1.5;fill:none;stroke-linejoin:round;stroke-linecap:round}
+.hw .ln2{stroke:var(--tx-3);stroke-width:1;fill:none}
+.hw .dim{stroke:var(--amber);stroke-width:.9;fill:none;stroke-dasharray:3 3}
+.hw .dimt{fill:var(--amber);font-family:var(--f-m);font-size:9.5px}
+.hw .cone{fill:var(--amber);opacity:.13}
+.hw .conel{stroke:var(--amber);stroke-width:1;fill:none}
+.hw .tofc{fill:var(--wie);opacity:.15}
+.hw .tofl{stroke:var(--wie);stroke-width:1;fill:none;stroke-dasharray:4 3}
+.hw .gnd{stroke:var(--tx-2);stroke-width:1.5}
+.hw .cal{fill:none;stroke:var(--amber);stroke-width:1}
+.hw .calt{fill:var(--amber);font-family:var(--f-m);font-size:9px;font-weight:600}
+.hw .lbl{fill:var(--tx-2);font-family:var(--f-s);font-size:11px}
+.hw .lblm{fill:var(--tx-3);font-family:var(--f-m);font-size:9.5px;letter-spacing:.05em}
+.sweep{transform-origin:var(--ox) var(--oy);animation:sweep 3.4s ease-in-out infinite}
+@keyframes sweep{0%,100%{transform:rotate(-13deg)}50%{transform:rotate(13deg)}}
+
+/* parts list */
+.parts{display:grid;grid-template-columns:1fr 1fr;gap:0 26px;align-content:start;min-height:0;overflow:hidden}
+.parts .phdr{grid-column:1/-1}
+.part{display:grid;grid-template-columns:22px 1fr 26px;gap:9px;padding:5.5px 0;
+  border-bottom:1px solid var(--line-soft);align-items:baseline;transition:.16s;cursor:default}
+.part:hover{background:var(--panel-2)}
+.part .no{font-family:var(--f-m);font-size:9.5px;color:var(--amber);font-weight:600}
+.part .de{font-size:11.5px;color:var(--tx-2);line-height:1.3}
+.part .qt{font-family:var(--f-m);font-size:9.5px;color:var(--tx-3);text-align:right}
+
+/* haptic vocabulary */
+.hap{display:flex;flex-direction:column;gap:0}
+.haprow{display:grid;grid-template-columns:1fr 96px 56px;gap:12px;padding:9px 0;align-items:center;
+  border-bottom:1px solid var(--line-soft)}
+.haprow .ev{font-size:12.5px;color:var(--tx-2)}
+.haprow .ev i{color:var(--tx-3);font-style:italic;font-size:11px}
+.haprow .zn{font-family:var(--f-m);font-size:10px;color:var(--tx-3);text-align:right;letter-spacing:.06em}
+.pat{display:flex;gap:3px;align-items:center;height:11px}
+.pat b{background:var(--amber);border-radius:2px;height:9px;display:block}
+.pat b.d{width:8px} .pat b.l{width:26px} .pat b.t{width:3px;height:3px;border-radius:50%}
+
+/* ---------------- launch / demo ---------------- */
+.launch{display:flex;flex-direction:column;gap:20px;align-items:flex-start}
+.lbtn{display:inline-flex;align-items:center;gap:13px;background:var(--amber);color:#12181F;
+  font-family:var(--f-s);font-size:17px;font-weight:700;padding:17px 28px;border-radius:13px;
+  text-decoration:none;border:0;cursor:pointer;transition:.2s;box-shadow:0 12px 30px -8px rgba(255,153,0,.45)}
+.lbtn:hover{transform:translateY(-3px);box-shadow:0 18px 40px -8px rgba(255,153,0,.6)}
+.lbtn .k{font-family:var(--f-m);font-size:12px;opacity:.65}
+[data-hc="on"] .lbtn{background:#FFD400;color:#000}
+.lbtn.ghost{background:transparent;color:var(--tx);border:1px solid var(--line);box-shadow:none;font-size:15px}
+.lbtn.ghost:hover{border-color:var(--amber);color:var(--amber)}
+.urlbar{display:flex;align-items:center;gap:11px;background:var(--panel);border:1px solid var(--line);
+  border-radius:10px;padding:11px 15px;font-family:var(--f-m);font-size:13px;color:var(--tx-2);
+  max-width:620px;overflow:hidden}
+.urlbar .lock{color:var(--sight)}
+.linkrow{display:flex;gap:26px;flex-wrap:wrap;font-family:var(--f-m);font-size:13px}
+.linkrow a{color:var(--sight-lift);text-decoration:none;border-bottom:1px solid transparent;transition:.16s}
+.linkrow a:hover{border-color:var(--sight-lift)}
+
+/* team */
+.team{display:flex;gap:26px;flex-wrap:wrap}
+.mem{display:flex;flex-direction:column;gap:7px;width:132px}
+.av{width:52px;height:52px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;
+  font-family:var(--f-d);font-size:17px;font-weight:600;color:var(--tx);position:relative;background:var(--panel)}
+.av::after{content:"";position:absolute;top:2px;right:2px;width:8px;height:8px;border-radius:50%;
+  background:var(--sight)}
+.mem.you .av{border-color:var(--amber);color:var(--amber);box-shadow:0 0 0 4px rgba(255,153,0,.13)}
+.mem .nm{font-size:13.5px;font-weight:600;color:var(--tx);line-height:1.25}
+.mem.you .nm{color:var(--amber)}
+.mem .rl{font-size:11.5px;color:var(--tx-3);line-height:1.35}
+
+/* consent stepper */
+.steps{display:flex;gap:9px;margin-bottom:16px;flex-wrap:wrap}
+.step{border:1px solid var(--line);background:var(--panel);color:var(--tx-3);border-radius:9px;
+  padding:9px 14px;font-family:var(--f-m);font-size:11.5px;cursor:pointer;transition:.18s;
+  display:flex;align-items:center;gap:9px;letter-spacing:.03em}
+.step:hover{border-color:var(--tx-3);color:var(--tx-2)}
+.step.on{border-color:var(--amber);background:var(--amber);color:#12181F;font-weight:600}
+[data-hc="on"] .step.on{background:#FFD400;color:#000}
+.step .i{font-family:var(--f-m);font-weight:700}
+
+/* help overlay */
+.help{position:fixed;inset:0;background:rgba(6,10,15,.9);z-index:40;display:none;place-items:center;padding:40px}
+.help.on{display:grid}
+.helpcard{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:32px 36px;
+  max-width:600px;box-shadow:var(--sh)}
+.helpcard h3{font-family:var(--f-d);font-size:26px;margin:0 0 18px;color:var(--tx);font-weight:600}
+.kb{display:grid;grid-template-columns:auto 1fr;gap:11px 18px;font-size:14px;color:var(--tx-2);align-items:center}
+.kb kbd{font-family:var(--f-m);font-size:11.5px;background:var(--panel-3);border:1px solid var(--line);
+  border-bottom-width:2px;border-radius:5px;padding:4px 8px;color:var(--tx);white-space:nowrap}
+
+/* notes */
+.notes{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:2px solid var(--amber);
+  padding:18px 26px;z-index:30;display:none;max-height:33vh;overflow:auto}
+.notes.on{display:block}
+.notes h4{font-family:var(--f-m);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--amber);margin:0 0 8px}
+.notes p{margin:0;font-size:14.5px;line-height:1.6;color:var(--tx-2);max-width:110ch}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;
+    transition-duration:.001ms!important}
+}
+</style>
+<div class="viewport">
+<div class="stage" id="stage">
+  <div class="brandrail"></div>
+  <div class="railfill" id="railfill"></div>
+  <div class="slug"><span>Amazon Industry Program 2026</span><b>Team AmazByte</b><span>AUB</span></div>
+  <div class="dots" id="dots"></div>
+  <div class="pagenum"><i id="pnum">01</i> / 18</div>
+  <div class="narr" id="narr">
+    <span class="eye"></span>
+    <span class="txt" id="narrtxt"></span>
+  </div>
+
+<!-- ═══════════ 01 · TITLE ═══════════ -->
+<section class="slide is-active" data-ar="عين. وعي اجتماعي فوري بالعربية." data-en="3ayn. Real-time social awareness, in Arabic.">
+  <div class="cols l" style="align-items:center">
+    <div class="colstack">
+      <p class="eyebrow">Amazon Industry Program 2026 · Team AmazByte</p>
+      <h1 class="head" style="font-size:92px;margin-bottom:10px;letter-spacing:-.035em">3ayn<span class="ar" style="color:var(--sight-lift);padding-inline-start:26px">عين</span></h1>
+      <p class="dek" style="font-size:23px;font-family:var(--f-d);font-style:italic;color:var(--tx-2);max-width:20ch;line-height:1.32">Real-time, Arabic-first social awareness for blind and low-vision users.</p>
+      <div style="width:64px;height:2px;background:var(--amber);margin:14px 0 4px"></div>
+      <p class="dek" style="font-size:15px;margin:0">American University of Beirut · Maroun Semaan Faculty of Engineering &amp; Architecture</p>
+      <div class="chips" style="margin-top:20px">
+        <span class="chip a">AWS · 11 services</span>
+        <span class="chip k">Deployed &amp; live</span>
+        <span class="chip w">IEEE WiE</span>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <div class="phone"><div class="pscreen" data-phone="home"></div></div>
+      <p class="pcap">Live on the deployed app — <b>not a mockup</b></p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 02 · TEAM ═══════════ -->
+<section class="slide" data-ar="خمسة أشخاص، منتج واحد." data-en="Five people, one product.">
+  <p class="eyebrow">The team</p>
+  <h1 class="head wide">Five people, one product</h1>
+  <div class="cols r" style="margin-top:14px">
+    <div class="colstack">
+      <div class="team">
+        <div class="mem"><div class="av">CJ</div><div class="nm">Carla Jaffal</div><div class="rl">Software &amp; AWS architecture</div></div>
+        <div class="mem"><div class="av">MG</div><div class="nm">Marita Gereige</div><div class="rl">Machine learning</div></div>
+        <div class="mem"><div class="av">WC</div><div class="nm">William Chalhoub</div><div class="rl">Machine learning, guardian systems</div></div>
+        <div class="mem you"><div class="av">HA</div><div class="nm">Hadi Al Shmaissani</div><div class="rl">Machine learning</div></div>
+        <div class="mem"><div class="av">MA</div><div class="nm">Mary Abou Rjeili</div><div class="rl">Market research &amp; business</div></div>
+      </div>
+      <p class="dek" style="margin-top:8px">Between us: full-stack AWS engineering, applied computer vision, and the market research that shaped who this is actually for. Built together at the American University of Beirut for the Amazon Industry Program 2026.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:22px;padding-left:32px;border-left:1px solid var(--line-soft)">
+      <div class="stat"><div class="n amb" data-count="11">0</div><div class="l">AWS services, one SAM template</div></div>
+      <div class="stat"><div class="n amb" data-count="8">0</div><div class="l">Lambda functions, Java 21</div></div>
+      <div class="stat"><div class="n amb" data-count="2">0</div><div class="l">Live apps: blind user and guardian</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 03 · PROBLEM ═══════════ -->
+<section class="slide" data-ar="لا أداة تخبرك أن شخصاً يقترب منك." data-en="No existing tool can tell you someone is approaching.">
+  <div class="cols l" style="align-items:center">
+    <div class="colstack">
+      <p class="eyebrow">The problem</p>
+      <h1 class="head">None of the existing tools can tell you someone is approaching.</h1>
+      <div class="statrow" style="margin:14px 0 16px">
+        <div class="stat"><div class="n" data-count="43.3" data-suffix="M" data-dec="1">0</div><div class="l">people are blind worldwide</div></div>
+        <div class="stat"><div class="n amb" data-count="295" data-suffix="M">0</div><div class="l">more live with moderate to severe vision impairment</div></div>
+      </div>
+      <p class="dek">Both are rising as populations grow and age. <strong>90% live in low- and middle-income countries</strong>, precisely where existing assistive hardware does not reach.</p>
+      <p class="note-line" style="margin-top:10px">Seeing AI, Google Lookout and Be My Eyes are reactive: tap a button, get an answer. None of them are built for Arabic first.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <div class="phone"><div class="pscreen" data-phone="live"></div></div>
+      <p class="pcap">9:41:53 PM — <b>logged the instant it happened</b></p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 04 · WHY NOW ═══════════ -->
+<section class="slide" data-ar="سعر التجربة الجيدة انهار." data-en="The price of a good-enough experience just collapsed.">
+  <div class="cols l" style="align-items:center">
+    <div class="colstack">
+      <p class="eyebrow">Why now</p>
+      <h1 class="head wide">The price of a good-enough experience just collapsed</h1>
+      <div class="priceflow" style="margin:22px 0 18px">
+        <div class="pf"><div class="v a">$4,000<span style="font-size:28px">+</span></div><div class="l">dedicated devices, three years ago</div></div>
+        <div class="pfarw">→</div>
+        <div class="pf"><div class="v b">$299</div><div class="l">Meta Ray-Ban, today</div></div>
+        <div class="pfarw">→</div>
+        <div class="pf"><div class="v c">$0</div><div class="l">3ayn — the phone already in their pocket</div></div>
+      </div>
+      <p class="dek">At the same time, Amazon Bedrock, Rekognition, Textract and Polly became capable and cheap enough to run this entirely from a phone browser. <strong>The device is now optional.</strong></p>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <div class="phone"><div class="pscreen" data-phone="settings"></div></div>
+      <p class="pcap">A real AWS endpoint — <b>not a slide</b></p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 05 · SOLUTION / ARCHITECTURE ═══════════ -->
+<section class="slide" data-ar="يروي اللحظة عند حدوثها. بالعربية. بلا يدين." data-en="It narrates the moment something happens. In Arabic. Hands-free.">
+  <p class="eyebrow">The solution</p>
+  <h1 class="head wide" style="font-size:44px;margin-bottom:6px">It narrates the moment something happens. In Arabic. Hands-free.</h1>
+  <p class="note-line" style="margin-bottom:10px">Latency-critical events — narration and the obstacle alarm — never leave the browser. Only user-initiated requests cross the network.</p>
+  <div class="archwrap"><svg class="arch" id="archsvg" viewBox="0 0 1420 452" preserveAspectRatio="xMidYMid meet" role="img" aria-label="3ayn system architecture: on-device browser loop on the left, AWS cloud loop on the right, joined by API Gateway"></svg></div>
+</section>
+
+<!-- ═══════════ 06 · STACK ═══════════ -->
+<section class="slide" data-ar="أحد عشر خدمة، قالب واحد." data-en="Eleven AWS services, one template, zero guesswork.">
+  <p class="eyebrow">How it is built</p>
+  <h1 class="head wide">Eleven AWS services, one template, zero guesswork</h1>
+  <div class="cols r" style="margin-top:16px">
+    <div class="colstack">
+      <table class="dtable">
+        <thead><tr><th>Category</th><th>Technology</th></tr></thead>
+        <tbody>
+          <tr><td>Frontend</td><td>Vanilla JS PWA, zero build step, MediaPipe pose, Web Speech API, Leaflet</td></tr>
+          <tr><td>Backend</td><td>Java 21 on AWS Lambda, 8 functions, deployed by AWS SAM</td></tr>
+          <tr><td>AI and ML</td><td>Bedrock Nova 2 Lite, Textract, Rekognition Labels and Faces, Polly neural Arabic</td></tr>
+          <tr><td>Database</td><td>DynamoDB, 3 pay-per-request tables</td></tr>
+          <tr><td>Auth</td><td>Cognito, sign-in optional by design</td></tr>
+          <tr><td>API</td><td class="mono">API Gateway REST · /ask /read /find /who /enroll /speak /user /watch</td></tr>
+          <tr><td>Hosting</td><td>AWS Amplify, Git-connected auto-deploy</td></tr>
+          <tr><td>Region</td><td class="mono">eu-west-2</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="colstack" style="padding-left:32px;border-left:1px solid var(--line-soft)">
+      <p class="eyebrow" style="color:var(--tx-3)">Deployed surface</p>
+      <div class="chips">
+        <span class="chip a">Bedrock</span><span class="chip a">Rekognition</span><span class="chip a">Textract</span>
+        <span class="chip a">Polly</span><span class="chip a">Lambda</span><span class="chip a">API Gateway</span>
+        <span class="chip a">DynamoDB</span><span class="chip a">Cognito</span><span class="chip a">Amplify</span>
+        <span class="chip a">S3</span><span class="chip a">CloudWatch</span>
+      </div>
+      <p class="dek" style="margin-top:16px">One <span class="mono" style="color:var(--amber)">template.yaml</span> stands the whole thing up. No console clicking, no snowflake resources — the architecture on the previous slide is the architecture that deploys.</p>
+      <div class="panel" style="margin-top:6px;border-color:var(--sight)">
+        <p style="margin:0;font-size:13.5px;color:var(--tx-2);line-height:1.55"><strong style="color:var(--sight-lift)">Zero build step</strong> is a deliberate accessibility decision, not laziness. The app is plain JS served as static files, so it loads on a low-end Android over a weak connection — the exact device our users have.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 07 · PROBLEM MEETS SOLUTION ═══════════ -->
+<section class="slide" data-ar="كل مشكلة تقابلها ميزة مشحونة." data-en="Every pain point maps to a shipped feature.">
+  <div class="cols l" style="align-items:center">
+    <div class="colstack">
+      <p class="eyebrow">Problem, meet solution</p>
+      <h1 class="head">Every pain point maps to a shipped feature</h1>
+      <ul class="klist" style="margin-top:18px">
+        <li><span class="p">Can't tell someone is approaching</span><span class="arw">→</span><span class="s">On-device narration, instant</span></li>
+        <li><span class="p">No Arabic-first alternative</span><span class="arw">→</span><span class="s">Bedrock and Polly, Arabic throughout</span></li>
+        <li><span class="p">Family worries when out alone</span><span class="arw">→</span><span class="s">Trusted-viewer, consent-gated</span></li>
+        <li><span class="p">A device costs $2,500 to $5,000</span><span class="arw">→</span><span class="s">Runs on the phone already owned</span></li>
+      </ul>
+      <p class="note-line" style="margin-top:16px">Not a roadmap. Every row on the right is deployed and reachable at the URL on the last slide.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <div class="phone"><div class="pscreen" data-phone="ask"></div></div>
+      <p class="pcap">Who is in front of me: <b>“yara, sister”</b></p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 08 · SEE IT WORK ═══════════ -->
+<section class="slide" data-ar="أربع نقرات، أربع خدمات، صوت واحد." data-en="Four taps, four AWS services, one voice.">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:24px">
+    <div>
+      <p class="eyebrow">See it work</p>
+      <h1 class="head wide" style="font-size:44px;margin-bottom:4px">Four taps, four AWS services, one voice</h1>
+    </div>
+    <p class="note-line" style="text-align:right;max-width:34ch;margin-bottom:8px">Every screen is bilingual by default. <span class="hl">Click any tab</span> — these are live, not images.</p>
+  </div>
+  <div class="screengrid" style="margin-top:20px">
+    <div class="sgcell"><div class="phone sm"><div class="pscreen" data-phone="home" data-tabs="1"></div></div><p class="sgcap"><b>Home</b> always listening</p></div>
+    <div class="sgcell"><div class="phone sm"><div class="pscreen" data-phone="ask" data-tabs="1"></div></div><p class="sgcap"><b>Ask</b> Bedrock Nova · scene</p></div>
+    <div class="sgcell"><div class="phone sm"><div class="pscreen" data-phone="find" data-tabs="1"></div></div><p class="sgcap"><b>Find</b> Rekognition · direction</p></div>
+    <div class="sgcell"><div class="phone sm"><div class="pscreen" data-phone="read" data-tabs="1"></div></div><p class="sgcap"><b>Read</b> Textract · text aloud</p></div>
+  </div>
+  <p class="dek" style="margin-top:20px;max-width:none;color:var(--sight-lift);font-weight:600;font-size:16px">Designed for someone who cannot see the screen: one tap between features, large touch targets, every action confirmed by voice, not sight.</p>
+</section>
+
+<!-- ═══════════ 09 · CONSENT ═══════════ -->
+<section class="slide" data-ar="لا يرى الوليّ شيئاً حتى يوافق المستخدم." data-en="The guardian never sees anything until the blind user says yes.">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:24px">
+    <div>
+      <p class="eyebrow">Consent, not surveillance</p>
+      <h1 class="head wide" style="font-size:44px;margin-bottom:4px">The guardian never sees anything until the blind user says yes</h1>
+    </div>
+    <p class="note-line" style="text-align:right;max-width:32ch;margin-bottom:8px"><span class="hl">Step through it</span> — the handshake below is the real flow.</p>
+  </div>
+  <div class="cols" style="grid-template-columns:1.25fr .75fr;margin-top:20px;gap:44px">
+    <div class="colstack">
+      <div class="steps" id="csteps"></div>
+      <div class="panel" id="cbody" style="min-height:190px;border-color:var(--amber)"></div>
+      <p class="note-line">Off by default. Turning it on lets a linked guardian request a still frame and a location — refreshed every few seconds, never full video. Nothing is shared until the user explicitly allows, and it is revocable instantly.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <div class="phone"><div class="pscreen" id="cphone" data-phone="consent1"></div></div>
+      <p class="pcap" id="ccap">Guardian links with a code</p>
+    </div>
+  </div>
+</section>
+<!-- ═══════════ 10 · HARDWARE — GLASSES ═══════════ -->
+<section class="slide" data-ar="مصمّم إلى مواصفة تصنيع كاملة." data-en="Engineered to full manufacturing specification.">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:24px">
+    <div>
+      <p class="eyebrow">Hardware, designed</p>
+      <h1 class="head wide" style="font-size:44px;margin-bottom:4px">Engineered to full manufacturing specification</h1>
+    </div>
+    <p class="note-line" style="text-align:right;max-width:32ch;margin-bottom:8px"><span class="mono" style="color:var(--amber)">3AYN-GL-01</span> · third angle · mm</p>
+  </div>
+  <div class="cols" style="grid-template-columns:1.3fr .7fr;margin-top:14px;gap:40px;align-items:stretch;min-height:0">
+    <div style="display:flex;flex-direction:column;min-height:0">
+      <svg class="hw" viewBox="0 0 700 330" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Smart glasses front elevation and right side elevation with dimensions and numbered part callouts">
+        <text class="lblm" x="4" y="14">FRONT ELEVATION · 1:1</text>
+        <g transform="translate(20,34)">
+          <path class="ln" d="M18 44 Q18 18 62 16 Q106 14 112 40 Q118 66 92 82 Q60 100 34 82 Q14 68 18 44Z"/>
+          <path class="ln" d="M178 40 Q184 14 228 16 Q272 18 272 44 Q276 68 256 82 Q230 100 198 82 Q172 66 178 40Z"/>
+          <path class="ln" d="M112 40 Q145 30 178 40"/>
+          <path class="ln2" d="M112 48 Q145 38 178 48"/>
+          <path class="ln" d="M18 44 L2 50"/><path class="ln" d="M272 44 L288 50"/>
+          <circle class="ln2" cx="65" cy="49" r="27"/><circle class="ln2" cx="225" cy="49" r="27"/>
+          <rect class="ln" x="53" y="8" width="17" height="11" rx="2.5"/>
+          <rect class="ln" x="220" y="8" width="17" height="11" rx="2.5"/>
+          <path class="dim" d="M2 116 L288 116"/><path class="dim" d="M2 110 L2 122"/><path class="dim" d="M288 110 L288 122"/>
+          <text class="dimt" x="130" y="131">142.0</text>
+          <path class="dim" d="M300 16 L300 100"/><path class="dim" d="M294 16 L306 16"/><path class="dim" d="M294 100 L306 100"/>
+          <text class="dimt" x="308" y="60">44.0</text>
+          <g class="callout" data-part="1"><circle class="cal" cx="61" cy="-8" r="9"/><text class="calt" x="58" y="-5">1</text><path class="ln2" d="M61 1 L61 8"/></g>
+          <g class="callout" data-part="6"><circle class="cal" cx="145" cy="8" r="9"/><text class="calt" x="142" y="11">6</text><path class="ln2" d="M145 17 L145 33"/></g>
+          <g class="callout" data-part="5"><circle class="cal" cx="150" cy="96" r="9"/><text class="calt" x="147" y="99">5</text><path class="ln2" d="M145 87 L145 87"/></g>
+          <g class="callout" data-part="7"><circle class="cal" cx="-4" cy="34" r="9"/><text class="calt" x="-7" y="37">7</text></g>
+          <g class="callout" data-part="4"><circle class="cal" cx="296" cy="96" r="9"/><text class="calt" x="292" y="99">4</text></g>
+        </g>
+        <text class="lblm" x="374" y="14">RIGHT SIDE ELEVATION · 1:1</text>
+        <g transform="translate(378,34)">
+          <ellipse class="ln" cx="14" cy="44" rx="11" ry="30"/>
+          <path class="ln" d="M25 30 L250 26 Q286 26 292 62 Q294 84 286 96"/>
+          <path class="ln" d="M25 56 L250 52 Q278 52 282 76 Q284 90 278 100"/>
+          <path class="ln2" d="M250 26 L250 52"/>
+          <circle class="ln2" cx="86" cy="41" r="6"/><circle class="ln2" cx="124" cy="40" r="4"/>
+          <rect class="ln2" x="150" y="34" width="26" height="12" rx="2"/>
+          <path class="dim" d="M25 116 L292 116"/><text class="dimt" x="140" y="131">148.0 temple</text>
+          <g class="callout" data-part="3"><circle class="cal" cx="86" cy="8" r="9"/><text class="calt" x="83" y="11">3</text><path class="ln2" d="M86 17 L86 35"/></g>
+          <g class="callout" data-part="11"><circle class="cal" cx="163" cy="8" r="9"/><text class="calt" x="157" y="11">11</text><path class="ln2" d="M163 17 L163 34"/></g>
+          <g class="callout" data-part="8"><circle class="cal" cx="248" cy="8" r="9"/><text class="calt" x="245" y="11">8</text><path class="ln2" d="M248 17 L250 26"/></g>
+          <g class="callout" data-part="10"><circle class="cal" cx="296" cy="60" r="9"/><text class="calt" x="290" y="63">10</text></g>
+          <g class="callout" data-part="13"><circle class="cal" cx="124" cy="76" r="9"/><text class="calt" x="118" y="79">13</text><path class="ln2" d="M124 67 L124 54"/></g>
+        </g>
+        <text class="lblm" x="4" y="196">MASS DISTRIBUTION · NOTE</text>
+        <text class="lbl" x="4" y="216">Left and right temples are not interchangeable: the cell and its</text>
+        <text class="lbl" x="4" y="233">management board sit left, the compute board and antenna right,</text>
+        <text class="lbl" x="4" y="250">so that mass is balanced about the bridge and the antenna is kept</text>
+        <text class="lbl" x="4" y="267">clear of the cell.</text>
+      </svg>
+    </div>
+    <div style="display:flex;flex-direction:column;min-height:0;overflow:hidden">
+      <p class="eyebrow" style="color:var(--tx-3);margin-bottom:8px">Parts list · 3AYN-GL</p>
+      <div class="parts" id="partslist"></div>
+    </div>
+  </div>
+  <p class="dek" style="margin-top:10px;max-width:none">Dimensioned drawings and interactive 3D models, not a napkin sketch. <strong>An honest boundary:</strong> the industrial design is complete and buildable — the software runs today on the phone already in their pocket.</p>
+</section>
+
+<!-- ═══════════ 11 · CANE / SENSING ENVELOPE ═══════════ -->
+<section class="slide" data-ar="العصا تقرأ الأرض. خمسة أنماط فقط." data-en="The cane reads the ground. Five haptic patterns only.">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:24px">
+    <div>
+      <p class="eyebrow">Hardware, sensed</p>
+      <h1 class="head wide" style="font-size:44px;margin-bottom:4px">A cane that stays silent until silence would be a lie</h1>
+    </div>
+    <p class="note-line" style="text-align:right;max-width:32ch;margin-bottom:8px"><span class="mono" style="color:var(--amber)">3AYN-CN-02</span> · schematic, not to scale</p>
+  </div>
+  <div class="cols" style="grid-template-columns:1.15fr .85fr;margin-top:14px;gap:40px">
+    <div style="display:flex;flex-direction:column;min-height:0">
+      <svg class="hw" id="canesvg" viewBox="0 -36 620 384" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Smart cane sensing envelope: ultrasonic cone thirty degrees at forty kilohertz sweeping twelve hertz, and a time-of-flight cone canted thirty degrees down for drop-off and kerb detection">
+        <g class="sweep" style="--ox:206px;--oy:96px">
+          <path class="cone" d="M206 96 L560 44 A360 360 0 0 1 566 128 Z"/>
+          <path class="conel" d="M206 96 L560 44"/><path class="conel" d="M206 96 L566 128"/>
+          <path class="conel" d="M310 79 A108 108 0 0 1 312 110" opacity=".6"/>
+          <path class="conel" d="M410 64 A208 208 0 0 1 414 118" opacity=".6"/>
+          <text class="dimt" x="318" y="99">1.0 m</text>
+          <text class="dimt" x="420" y="105">2.0 m</text>
+          <text class="dimt" x="520" y="107">3.5 m</text>
+        </g>
+        <path class="tofc" d="M206 96 L322 300 L386 300 Z"/>
+        <path class="tofl" d="M206 96 L322 300"/><path class="tofl" d="M206 96 L386 300"/>
+        <path class="ln" d="M188 60 L214 44 L232 78 L206 96 Z"/>
+        <rect class="ln" x="184" y="16" width="34" height="30" rx="3" transform="rotate(-27 201 31)"/>
+        <path class="ln" d="M203 92 L300 286"/><path class="ln" d="M213 87 L310 281"/>
+        <circle class="ln" cx="305" cy="290" r="12"/>
+        <path class="gnd" d="M40 300 L580 300"/><path class="ln2" d="M40 306 L580 306"/>
+        <path class="ln" d="M470 300 L470 268 L580 268"/>
+        <path class="ln2" d="M470 312 L580 312"/><path class="ln2" d="M470 320 L580 320"/>
+        <path class="dim" d="M150 46 L150 300"/><path class="dim" d="M144 46 L156 46"/><path class="dim" d="M144 300 L156 300"/>
+        <text class="dimt" x="86" y="176" transform="rotate(-90 86 176)" text-anchor="middle">head height 1.02 m</text>
+        <path class="dim" d="M486 262 L580 262"/><text class="dimt" x="492" y="256">kerb −0.12 m</text>
+        <text class="calt" x="272" y="-18" style="font-size:11px">Ultrasonic cone · 30° · 40 kHz · 12 Hz sweep</text>
+        <path class="ln2" d="M258 -22 L232 -22 L232 24"/>
+        <text x="150" y="336" style="fill:var(--wie);font-family:var(--f-m);font-size:11px;font-weight:600">Time-of-flight cone · 30° down · drop-off and kerb</text>
+        <path class="tofl" d="M300 330 L340 302"/>
+        <g class="callout"><circle class="cal" cx="248" cy="-22" r="9"/><text class="calt" x="242" y="-19">38</text></g>
+        <g class="callout"><circle class="cal" cx="120" cy="90" r="9"/><text class="calt" x="114" y="93">39</text><path class="ln2" d="M129 92 L200 98"/></g>
+      </svg>
+      <p class="note-line" style="margin-top:2px">Held at 45° in a two-point sweep, so the tip reads the ground and nothing else. The ultrasonic head is aimed forward at chest height to catch what a sweep structurally cannot: overhangs, open car doors, a person standing still.</p>
+    </div>
+    <div class="colstack" style="min-height:0">
+      <p class="eyebrow" style="color:var(--tx-3);margin-bottom:2px">Haptic vocabulary</p>
+      <div class="hap">
+        <div class="haprow"><span class="ev">Obstacle ahead, closing</span><span class="pat"><b class="d"></b><b class="d"></b></span><span class="zn">Upper</span></div>
+        <div class="haprow"><span class="ev">Drop-off or descending step</span><span class="pat"><b class="l"></b></span><span class="zn">Both</span></div>
+        <div class="haprow"><span class="ev">Person approaching <i>(from glasses)</i></span><span class="pat"><b class="d"></b><b class="d"></b><b class="d"></b></span><span class="zn">Lower</span></div>
+        <div class="haprow"><span class="ev">Hand extended toward the wearer</span><span class="pat"><b class="d"></b><b class="l"></b></span><span class="zn">Upper</span></div>
+        <div class="haprow"><span class="ev">Pairing lost</span><span class="pat"><b class="t"></b><b class="t"></b><b class="t"></b><b class="t"></b></span><span class="zn">Lower</span></div>
+      </div>
+      <p class="note-line" style="margin-top:4px">Five patterns only, and none of them continuous. <strong style="color:var(--tx);font-style:normal">A cane that buzzes constantly is a cane that gets switched off</strong> — silence is the resting state, and the wearer's own hearing is never competed with.</p>
+      <div class="panel" style="margin-top:2px">
+        <p class="eyebrow" style="color:var(--tx-3);margin-bottom:9px">Electrical block · 3AYN-CN</p>
+        <div class="mono" style="font-size:11.5px;color:var(--tx-2);line-height:1.85">
+          Ultrasonic pair <span style="color:var(--tx-3)">40 kHz</span> ─┐<br>
+          Time-of-flight <span style="color:var(--tx-3)">item 39</span> ─┼→ <span style="color:var(--amber)">ESP32-S3</span> → LRA driver ×2<br>
+          IMU 6-axis <span style="color:var(--tx-3)">sweep cadence</span> ─┤ &nbsp;&nbsp;<span style="color:var(--tx-3)">arbitration</span> → BLE 5.0 phone, glasses<br>
+          Controls ×2 <span style="color:var(--tx-3)">items 32, 33</span> ─┘ &nbsp;&nbsp;← Cell 3400 mAh · 30 d standby
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 12 · ACCESSIBILITY ═══════════ -->
+<section class="slide" data-ar="مقيس، لا مفترض." data-en="Accessibility, measured, not assumed.">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:24px">
+    <div>
+      <p class="eyebrow">Accessibility</p>
+      <h1 class="head wide" style="font-size:44px;margin-bottom:4px">Measured, not assumed</h1>
+    </div>
+    <p class="note-line" style="text-align:right;max-width:36ch;margin-bottom:8px">Press <kbd style="font-family:var(--f-m);color:var(--amber)">H</kbd> — <span class="hl">this deck flips too</span>. The ratios below recompute live.</p>
+  </div>
+  <div class="cols" style="grid-template-columns:.92fr 1.08fr;margin-top:16px;gap:44px">
+    <div class="colstack">
+      <p class="dek">Black and yellow, for users with some usable vision, where a strong colour pop finds the button. Every pairing is WCAG-audited — and one real failure, an alert colour at <span class="mono" style="color:var(--aub)">3.55:1</span>, was caught and fixed.</p>
+      <div class="cmeter" id="cmeter"></div>
+      <p class="note-line">These numbers are computed in the browser right now from the colours this deck is painted with — not typed in by hand. Flip the mode and watch every row change.</p>
+    </div>
+    <div class="screengrid" style="grid-template-columns:1fr 1fr">
+      <div class="sgcell"><div class="phone sm"><div class="pscreen" data-phone="home" data-tabs="1"></div></div><p class="sgcap">Standard theme</p></div>
+      <div class="sgcell"><div class="phone sm"><div class="pscreen dark" data-phone="home" data-tabs="1" data-forcedark="1"></div></div><p class="sgcap"><b>High-contrast</b> theme</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 13 · COMPETITIVE ═══════════ -->
+<section class="slide" data-ar="لا أحد يجلس حيث نجلس." data-en="Nobody sits where we sit.">
+  <p class="eyebrow">Added value</p>
+  <h1 class="head wide">Nobody sits where we sit</h1>
+  <div class="cols" style="grid-template-columns:1fr .95fr;margin-top:18px;gap:52px">
+    <div style="padding-left:74px;padding-bottom:34px;position:relative">
+      <div class="matrix" id="matrix"></div>
+    </div>
+    <div class="colstack" style="justify-content:center">
+      <p class="dek"><strong>The hardware tier is collapsing.</strong> Competing on hardware alone means fighting Meta at $299 — a fight nobody in this room wins.</p>
+      <p class="dek"><strong>Nobody is Arabic-first.</strong> Every device above treats Arabic as one supported locale among twenty. Right-to-left layout, Arabic neural speech and dialect are afterthoughts, not the premise.</p>
+      <div class="panel" style="border-color:var(--amber);border-left-width:3px">
+        <p style="margin:0;font-size:16px;line-height:1.55;color:var(--amber);font-weight:600">3ayn's edge: the phone already in their pocket, the language they already speak, and a guardian who already cares.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 14 · MARKET ═══════════ -->
+<section class="slide" data-ar="ثلاثة أسواق متحدة المركز، رأس جسر واحد." data-en="Three concentric markets, one beachhead.">
+  <div class="cols l" style="align-items:center">
+    <div class="colstack">
+      <p class="eyebrow">Market</p>
+      <h1 class="head wide">Three concentric markets, one beachhead</h1>
+      <p class="dek" style="margin-top:8px">Projected to reach <strong>61M blind and 474M with low vision by 2050</strong>, almost all of it in countries dedicated hardware does not reach.</p>
+      <div style="display:flex;flex-direction:column;gap:14px;margin-top:16px">
+        <div><span style="font-family:var(--f-d);font-size:25px;font-weight:600;color:var(--tx-3)">Reachable</span><span class="dek" style="display:inline;margin-left:10px;font-size:14.5px">anyone with a browser and a camera.</span></div>
+        <div><span style="font-family:var(--f-d);font-size:25px;font-weight:600;color:var(--wie)">Serviceable</span><span class="dek" style="display:inline;margin-left:10px;font-size:14.5px">Lebanon and the Levant first.</span></div>
+        <div><span style="font-family:var(--f-d);font-size:25px;font-weight:600;color:var(--sight-lift)">Beachhead</span><span class="dek" style="display:inline;margin-left:10px;font-size:14.5px">families who cannot justify a four-figure device.</span></div>
+      </div>
+    </div>
+    <div class="rings" style="padding-left:20px">
+      <div class="ring r1"><b>Reachable</b><span>browser + camera</span></div>
+      <div class="ring r2"><b>Serviceable</b><span>Lebanon &amp; the Levant</span></div>
+      <div class="ring r3"><b>Beachhead</b><span>families priced out of hardware</span></div>
+      <p class="note-line" style="text-align:center;margin-top:14px;max-width:38ch">We are not trying to win the whole ring. We are trying to be undeniable in the smallest one.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 15 · BUSINESS MODEL ═══════════ -->
+<section class="slide" data-ar="نموذج لسوق لا يقدر أن يدفع أربعة آلاف." data-en="A model built for a market that cannot pay four thousand dollars.">
+  <p class="eyebrow">Business model</p>
+  <h1 class="head wide">A model built for a market that cannot pay $4,000</h1>
+  <div class="cols" style="grid-template-columns:1.02fr .98fr;margin-top:14px;gap:48px">
+    <div class="colstack">
+      <svg class="chart" id="costchart" viewBox="0 0 460 268" role="img" aria-label="Cost per 1,000 interactions by feature, split between vision or AI call and speech synthesis"></svg>
+      <div class="legend" style="margin-top:4px">
+        <span><i style="background:#CC7A0A"></i>Vision / AI call</span>
+        <span><i style="background:#0FA78F"></i>Speech (Polly)</span>
+        <span style="color:var(--tx-3);margin-left:auto">Cost per 1,000 interactions</span>
+      </div>
+      <p class="note-line" style="margin-top:6px">Roughly <strong style="color:var(--tx);font-style:normal">$2.81 a month</strong> for an active user.</p>
+    </div>
+    <div class="colstack" style="justify-content:center;gap:22px">
+      <div>
+        <h3 style="font-family:var(--f-d);font-size:26px;margin:0 0 5px;color:var(--tx);font-weight:600">Free</h3>
+        <p class="dek" style="margin:0;font-size:15px">Ask, Read, Find and Who. No account required.</p>
+      </div>
+      <div>
+        <h3 style="font-family:var(--f-d);font-size:26px;margin:0 0 5px;color:var(--amber);font-weight:600">Family — about $5 a month</h3>
+        <p class="dek" style="margin:0;font-size:15px">Unlimited use, guardian dashboard, family face enrollment. Roughly <strong>45% gross margin</strong> today.</p>
+      </div>
+      <div>
+        <h3 style="font-family:var(--f-d);font-size:26px;margin:0 0 5px;color:var(--tx);font-weight:600">Institutional</h3>
+        <p class="dek" style="margin:0;font-size:15px">Schools for the blind and rehabilitation centres, priced per seat.</p>
+      </div>
+      <div class="panel" style="border-color:var(--aub);border-left-width:3px">
+        <p style="margin:0;font-size:13.5px;line-height:1.55;color:var(--tx-2)"><strong style="color:var(--aub)">One honest finding:</strong> a 30-minute guardian session costs six times a full day of the user's own usage today. It is an architecture fix — moving frames from DynamoDB to S3 — already at the top of the cost roadmap.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 16 · ROADMAP ═══════════ -->
+<section class="slide" data-ar="خارطة الطريق بعد هذا التسليم." data-en="The roadmap beyond this submission.">
+  <p class="eyebrow">What's next</p>
+  <h1 class="head wide">The roadmap beyond this submission</h1>
+  <div class="cols" style="grid-template-columns:1fr 1fr;margin-top:22px;gap:48px">
+    <div style="display:flex;flex-direction:column;gap:0">
+      <div class="part" style="grid-template-columns:30px 1fr;padding:15px 0"><span class="no">01</span><span class="de" style="font-size:15px"><strong style="color:var(--tx)">Currency identification</strong>, so a Lebanese banknote is recognised by sight, not guessed.</span></div>
+      <div class="part" style="grid-template-columns:30px 1fr;padding:15px 0"><span class="no">02</span><span class="de" style="font-size:15px"><strong style="color:var(--tx)">Object memory</strong> — “where did I leave my keys” answered from what the camera already saw.</span></div>
+      <div class="part" style="grid-template-columns:30px 1fr;padding:15px 0"><span class="no">03</span><span class="de" style="font-size:15px"><strong style="color:var(--tx)">Lebanese dialect tuning</strong>, so replies sound like family, not a textbook.</span></div>
+      <div class="part" style="grid-template-columns:30px 1fr;padding:15px 0"><span class="no">04</span><span class="de" style="font-size:15px"><strong style="color:var(--tx)">An on-device obstacle model</strong>, for a fully offline safety loop.</span></div>
+      <div class="part" style="grid-template-columns:30px 1fr;padding:15px 0"><span class="no">05</span><span class="de" style="font-size:15px"><strong style="color:var(--tx)">The wearable kit</strong> built out from spec to working electronics.</span></div>
+    </div>
+    <div class="colstack" style="justify-content:center">
+      <div class="panel" style="border-color:var(--sight)">
+        <p class="eyebrow" style="color:var(--sight-lift);margin-bottom:10px">Sequenced by user value, not novelty</p>
+        <p class="dek" style="margin:0;font-size:15px">Currency comes first because it is the request we heard most often and the one a sighted stranger is asked for most. The offline obstacle model comes fourth because it is the hardest and the least visible — and shipping it early would mean shipping it badly.</p>
+      </div>
+      <p class="note-line" style="margin-top:12px">The sensing envelope on slide 11 is already specified. Items 01–03 need no new hardware at all.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 17 · LIVE DEMO ═══════════ -->
+<section class="slide" data-ar="ليس شريحة. التطبيق نفسه." data-en="Not a slide. The app itself.">
+  <p class="eyebrow">Live demo</p>
+  <h1 class="head wide" style="font-size:52px">Everything you just saw is running right now</h1>
+  <div class="cols" style="grid-template-columns:1.1fr .9fr;margin-top:26px;gap:48px;align-items:center">
+    <div class="launch">
+      <div class="urlbar"><span class="lock">▲</span><span id="demourl">main.d2t3tjeuucf48t.amplifyapp.com</span></div>
+      <a class="lbtn" id="demobtn" href="https://main.d2t3tjeuucf48t.amplifyapp.com" target="_blank" rel="noopener">
+        Open the live app <span class="k">↗ new tab</span>
+      </a>
+      <p class="dek" style="max-width:52ch">Deployed on AWS Amplify, Git-connected. The camera, the Arabic narration, the guardian handshake and every AWS call are the same ones behind this deck.</p>
+      <div class="panel" style="max-width:52ch;border-color:var(--line)">
+        <p style="margin:0;font-size:13.5px;color:var(--tx-2);line-height:1.55"><strong style="color:var(--amber)">If the room's network is unkind:</strong> the phone panels throughout this deck are live re-creations of the same interface, and the recorded walkthrough is linked on the next slide. The demo does not depend on wifi to land.</p>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <div class="phone"><div class="pscreen" data-phone="live"></div></div>
+      <p class="pcap">Grant camera once — <b>everything else is voice</b></p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 18 · THE ASK ═══════════ -->
+<section class="slide" data-ar="أكبر خطر ليس تقنياً." data-en="The largest risk is not technical.">
+  <div style="display:flex;flex-direction:column;justify-content:center;flex:1;max-width:none">
+    <p class="eyebrow">The ask</p>
+    <h1 class="head wide" style="font-size:62px;max-width:20ch">The largest risk is not technical.</h1>
+    <p class="dek" style="font-size:20px;max-width:56ch;margin-top:6px">No blind or low-vision user has tested 3ayn yet. It is also the cheapest risk on this list to fix.</p>
+    <div class="panel" style="max-width:64ch;margin-top:22px;border-color:var(--amber);border-left-width:3px;background:var(--panel)">
+      <p style="margin:0;font-size:20px;line-height:1.5;color:var(--amber);font-weight:600">We are asking for what gets us there: introductions to disability organisations, and a chance to pilot with real users.</p>
+    </div>
+    <div style="width:100%;max-width:64ch;height:1px;background:var(--line);margin:30px 0 18px"></div>
+    <div class="linkrow">
+      <a href="https://github.com/xHeedz/3ayn.ai" target="_blank" rel="noopener">github.com/xHeedz/3ayn.ai</a>
+      <a href="https://main.d2t3tjeuucf48t.amplifyapp.com" target="_blank" rel="noopener">main.d2t3tjeuucf48t.amplifyapp.com</a>
+      <span style="color:var(--tx-3)">Team AmazByte · AUB · 2026</span>
+    </div>
+  </div>
+</section>
+
+  <div class="ctl">
+    <button class="cbtn" id="btnHC" title="High-contrast mode (H)" aria-label="Toggle high-contrast mode">HC</button>
+    <button class="cbtn" id="btnSpeak" title="Narrate slides aloud (S)" aria-label="Toggle spoken narration">◉</button>
+    <button class="cbtn" id="btnNotes" title="Speaker notes (N)" aria-label="Toggle speaker notes">N</button>
+    <button class="cbtn" id="btnHelp" title="Keyboard shortcuts (?)" aria-label="Show keyboard shortcuts">?</button>
+  </div>
+</div>
+</div>
+
+<div class="notes" id="notes"><h4>Speaker notes</h4><p id="notestxt"></p></div>
+
+<div class="help" id="help">
+  <div class="helpcard">
+    <h3>Presenting 3ayn</h3>
+    <div class="kb">
+      <kbd>→ ↓ Space</kbd><span>Next slide</span>
+      <kbd>← ↑</kbd><span>Previous slide</span>
+      <kbd>1 – 9</kbd><span>Jump to slide</span>
+      <kbd>Home / End</kbd><span>First / last slide</span>
+      <kbd>H</kbd><span>High-contrast mode — flips the deck and the phone UI together</span>
+      <kbd>S</kbd><span>Narrate each slide aloud, the way the app narrates the world</span>
+      <kbd>N</kbd><span>Speaker notes</span>
+      <kbd>F</kbd><span>Fullscreen</span>
+      <kbd>?</kbd><span>This panel</span>
+    </div>
+    <p style="margin:22px 0 0;font-size:13.5px;color:var(--tx-3);line-height:1.6">Every control here is reachable by keyboard alone, and every slide is announced to a screen reader on arrival. That is not decoration on an accessibility pitch — it is the argument.</p>
+  </div>
+</div>
+<script>
+(function(){
+"use strict";
+var RM = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ─────────────── stage scaling: a real 16:9 deck, not a web page ─────────────── */
+var stage = document.getElementById("stage");
+function fit(){
+  var s = Math.min(window.innerWidth/1600, window.innerHeight/900);
+  stage.style.transform = "scale("+s+")";
+}
+window.addEventListener("resize", fit); fit();
+
+/* ─────────────── slides ─────────────── */
+var slides = Array.prototype.slice.call(document.querySelectorAll(".slide"));
+var N = slides.length, cur = 0;
+
+var NOTES = [
+"Open by naming the room: Amazon Industry Program, Team AmazByte, AUB. Then say the one sentence that matters — 3ayn tells a blind user that someone is walking toward them, in Arabic, before they ask. The phone on the right is the deployed app, not a mockup. Say that out loud.",
+"Fast. Five names, five roles, one line each. Land on the three numbers — eleven AWS services, eight Lambdas, two live apps — because they say 'this is built' without you having to claim it.",
+"This is the slide that earns the rest. Existing tools are reactive: you tap, they answer. A blind user cannot tap a button about a person they do not know is there. 43.3 million blind, 295 million more with severe impairment, ninety percent in countries where a four-thousand-dollar device will never arrive.",
+"Why this could not have been built three years ago and can be built now. Walk the three prices left to right and pause on the zero. The device is now optional — that is the thesis of the whole company.",
+"Let the animation run for a beat before you talk over it. The point of the diagram: anything latency-critical stays in the browser. The obstacle alarm never waits on a network. Only things a user deliberately asked for cross to AWS.",
+"Do not read the table. Point at two rows: Java 21 on Lambda deployed by SAM, and 'zero build step'. Explain that zero build step is an accessibility decision — it loads on a cheap Android over a bad connection, which is the device our users actually have.",
+"The tightest slide in the deck. Four pain points, four shipped features. Say the word 'shipped' — none of the right column is roadmap.",
+"Click the tabs while you talk. Say: every one of these is real markup, and one tap separates any feature from any other, because someone who cannot see the screen cannot hunt for a control. Every action is confirmed by voice, not sight.",
+"Step through all four. The sentence to land: the guardian never sees anything until the blind user says yes. Off by default, still frames not video, revocable instantly. If anyone in the room is going to object to this product, it is here — answer it before they ask.",
+"This is where you prove the hardware is not hand-waving. Seventeen parts, dimensioned, mass deliberately balanced about the bridge. Then give the honest boundary immediately: the industrial design is complete, the software runs today, the electronics are not built yet. Volunteering that buys you credibility for everything else.",
+"The best engineering slide you have. Ultrasonic forward at chest height catches what a sweep structurally cannot — overhangs, open car doors, a person standing still. Then the line that shows you understand users: five patterns, none continuous, because a cane that buzzes constantly is a cane that gets switched off.",
+"Press H here. Let the whole deck flip to black and yellow in front of them and let it sit for two seconds. Then point at the ratios recomputing live. Finish with the failure — an alert colour at 3.55:1 that we caught and fixed — because admitting the miss is what proves the audit was real.",
+"Two claims only. The hardware tier is collapsing, so competing on hardware means fighting Meta at $299. And nobody is Arabic-first — for everyone else Arabic is one locale among twenty.",
+"Do not oversell the top ring. The honest framing is the last line: we are not trying to win the whole ring, we are trying to be undeniable in the smallest one.",
+"Costs are per thousand interactions, about $2.81 a month for an active user. Then volunteer the bad number: a guardian session costs six times a full day of normal use. Say it is a DynamoDB-to-S3 fix already at the top of the cost roadmap. Judges trust a team that shows them the ugly line.",
+"Sequenced by user value, not novelty. Currency first because it is the request we heard most. Offline obstacle model fourth because it is hardest and shipping it early means shipping it badly.",
+"Optional but strong if the network holds. Open it, grant camera once, let it narrate something in the room. If wifi is bad, say the fallback line and move on without apologising — the deck already showed the interface.",
+"End on the risk, not the pitch. No blind or low-vision user has tested this yet, and that is the cheapest risk here to fix. The ask is small and specific: introductions to disability organisations, and a chance to pilot. Then stop talking."
+];
+
+/* dots */
+var dotwrap = document.getElementById("dots");
+slides.forEach(function(s,i){
+  var b = document.createElement("button");
+  b.className = "dot"; b.type = "button";
+  b.setAttribute("aria-label","Go to slide "+(i+1));
+  b.addEventListener("click", function(){ go(i); });
+  dotwrap.appendChild(b);
+});
+var dots = Array.prototype.slice.call(dotwrap.children);
+
+function go(i, force){
+  i = Math.max(0, Math.min(N-1, i));
+  if(i===cur && !force) return;
+  slides[cur].classList.remove("is-active");
+  cur = i;
+  slides[cur].classList.add("is-active");
+  dots.forEach(function(d,j){ d.classList.toggle("on", j===cur); });
+  document.getElementById("pnum").textContent = String(cur+1).padStart(2,"0");
+  document.getElementById("railfill").style.height = ((cur+1)/N*100)+"%";
+  var s = slides[cur];
+  document.getElementById("narrtxt").innerHTML =
+    '<span class="a">'+(s.dataset.ar||"")+'</span>'+(s.dataset.en||"");
+  document.getElementById("notestxt").textContent = NOTES[cur]||"";
+  countUp(s);
+  speak(s);
+}
+
+/* ─────────────── keyboard ─────────────── */
+document.addEventListener("keydown", function(e){
+  if(e.metaKey||e.ctrlKey||e.altKey) return;
+  var k = e.key;
+  if(k==="ArrowRight"||k==="ArrowDown"||k===" "||k==="PageDown"){ e.preventDefault(); go(cur+1); }
+  else if(k==="ArrowLeft"||k==="ArrowUp"||k==="PageUp"){ e.preventDefault(); go(cur-1); }
+  else if(k==="Home"){ e.preventDefault(); go(0); }
+  else if(k==="End"){ e.preventDefault(); go(N-1); }
+  else if(k>="1"&&k<="9"){ go(parseInt(k,10)-1); }
+  else if(k==="h"||k==="H"){ toggleHC(); }
+  else if(k==="n"||k==="N"){ toggleNotes(); }
+  else if(k==="s"||k==="S"){ toggleSpeak(); }
+  else if(k==="f"||k==="F"){ if(!document.fullscreenElement){ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); } else { document.exitFullscreen(); } }
+  else if(k==="?"||k==="/"){ var h=document.getElementById("help"); h.classList.toggle("on"); }
+  else if(k==="Escape"){ document.getElementById("help").classList.remove("on"); }
+});
+document.getElementById("help").addEventListener("click", function(){ this.classList.remove("on"); });
+
+/* ─────────────── controls ─────────────── */
+function toggleHC(){
+  var on = document.documentElement.getAttribute("data-hc")==="on";
+  document.documentElement.setAttribute("data-hc", on?"off":"on");
+  document.getElementById("btnHC").classList.toggle("on", !on);
+  renderContrast();
+}
+function toggleNotes(){
+  var n=document.getElementById("notes"); n.classList.toggle("on");
+  document.getElementById("btnNotes").classList.toggle("on", n.classList.contains("on"));
+}
+var speakOn=false;
+function toggleSpeak(){
+  speakOn=!speakOn;
+  document.getElementById("btnSpeak").classList.toggle("on", speakOn);
+  if(!speakOn && window.speechSynthesis) window.speechSynthesis.cancel();
+  else speak(slides[cur]);
+}
+function speak(s){
+  if(!speakOn || !window.speechSynthesis) return;
+  try{
+    window.speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance(s.dataset.en||"");
+    u.rate = 0.98; u.pitch = 1;
+    var nr = document.getElementById("narr");
+    nr.classList.add("speaking");
+    u.onend = function(){ nr.classList.remove("speaking"); };
+    window.speechSynthesis.speak(u);
+  }catch(err){}
+}
+document.getElementById("btnHC").addEventListener("click", toggleHC);
+document.getElementById("btnNotes").addEventListener("click", toggleNotes);
+document.getElementById("btnSpeak").addEventListener("click", toggleSpeak);
+document.getElementById("btnHelp").addEventListener("click", function(){
+  document.getElementById("help").classList.toggle("on");
+});
+
+/* ─────────────── count-up ─────────────── */
+function countUp(slide){
+  slide.querySelectorAll("[data-count]").forEach(function(el){
+    var target = parseFloat(el.dataset.count), dec = parseInt(el.dataset.dec||"0",10);
+    var suf = el.dataset.suffix||"";
+    if(RM){ el.textContent = target.toFixed(dec)+suf; return; }
+    var t0 = null, dur = 900;
+    function step(ts){
+      if(!t0) t0=ts;
+      var p = Math.min(1,(ts-t0)/dur), e = 1-Math.pow(1-p,3);
+      el.textContent = (target*e).toFixed(dec)+suf;
+      if(p<1) requestAnimationFrame(step);
+    }
+    el.textContent = (0).toFixed(dec)+suf;
+    requestAnimationFrame(step);
+  });
+}
+
+/* ═══════════════ THE PHONE — rebuilt as live DOM ═══════════════ */
+var TABS = ["Home","Ask","Find","Read","Settings"];
+var SCREENS = {
+  home:{tab:0, body:function(){ return ''
+    +'<p class="pgreet"><span class="lat">أهلاً</span> carla</p>'
+    +'<div class="pcard"><div class="prow"><span class="pdot">◉</span><div>'
+    +'<p class="pttl">Always listening</p><p class="psub ar">مستمع دائماً · AI active</p></div>'
+    +'<span class="pon">On</span></div></div>'
+    +'<div class="pcard"><p class="plabel">Last narration</p>'
+    +'<p class="parab">شخص يمد يده نحوك</p><p class="pen">Someone is reaching out to you · 9:41 PM</p></div>'
+    +'<div class="pquad">'
+    +'<div class="pq"><span>✻</span>Ask</div><div class="pq"><span>◎</span>Find</div>'
+    +'<div class="pq"><span>▤</span>Read</div><div class="pq"><span>⚙</span>Settings</div></div>'
+    +'<p class="plabel" style="margin-top:2px">Live view</p>'
+    +'<div class="plive"><canvas width="560" height="200"></canvas><span class="tag">POSE · ON-DEVICE</span></div>'; }},
+  live:{tab:0, body:function(){ return ''
+    +'<p class="plabel">Live view</p>'
+    +'<div class="plive" style="height:108px"><canvas width="560" height="260"></canvas><span class="tag">MEDIAPIPE POSE</span></div>'
+    +'<p class="plabel" style="margin-top:4px">Event log</p>'
+    +'<div class="plog" data-log="1"></div>'
+    +'<div class="pwave"><i style="animation-delay:0s"></i><i style="animation-delay:.09s"></i><i style="animation-delay:.18s"></i><i style="animation-delay:.27s"></i><i style="animation-delay:.36s"></i><i style="animation-delay:.45s"></i><i style="animation-delay:.54s"></i><i style="animation-delay:.63s"></i><i style="animation-delay:.72s"></i></div>'
+    +'<p class="psub" style="text-align:center;margin-top:3px">Listening for social cues…</p>'; }},
+  ask:{tab:1, body:function(){ return ''
+    +'<p class="pgreet" style="font-family:var(--f-s)">Ask</p>'
+    +'<div class="pinput">Optional question, e.g. is anyone smiling?</div>'
+    +'<button class="pbtn pri">⚑ Describe my surroundings · <span class="ara">صف ما حولي</span></button>'
+    +'<button class="pbtn sec">☺ Who is in front of me? · <span class="ara">من أمامي؟</span></button>'
+    +'<div class="pcard"><p class="parab">أمامك yara، أختك</p>'
+    +'<p class="pen">In front of you: yara, sister</p></div>'
+    +'<p class="psub" style="margin-top:auto">Uses Bedrock Nova Lite (scene) and Rekognition Faces (who). Needs the backend URL in Settings and the camera on.</p>'; }},
+  find:{tab:2, body:function(){ return ''
+    +'<p class="pgreet" style="font-family:var(--f-s)">Find</p>'
+    +'<div class="chips" style="gap:5px">'
+    +'<span class="chip" style="background:#16233A;color:#fff;border:0;font-size:9px;padding:4px 8px">Bottle · <span class="ar">قنينة</span></span>'
+    +'<span class="chip" style="font-size:9px;padding:4px 8px;background:#fff;border-color:#E0DACE;color:#16233A">Phone · <span class="ar">هاتف</span></span>'
+    +'<span class="chip" style="font-size:9px;padding:4px 8px;background:#fff;border-color:#E0DACE;color:#16233A">Cup · <span class="ar">كوب</span></span>'
+    +'<span class="chip" style="font-size:9px;padding:4px 8px;background:#fff;border-color:#E0DACE;color:#16233A">Chair · <span class="ar">كرسي</span></span>'
+    +'<span class="chip" style="font-size:9px;padding:4px 8px;background:#fff;border-color:#E0DACE;color:#16233A">Door · <span class="ar">باب</span></span>'
+    +'<span class="chip" style="font-size:9px;padding:4px 8px;background:#fff;border-color:#E0DACE;color:#16233A">Bag · <span class="ar">حقيبة</span></span></div>'
+    +'<button class="pbtn pri" style="margin-top:6px">◎ Find it · <span class="ara">دلّي عليه</span></button>'
+    +'<div class="pcard"><p class="parab">القنينة على يمينك</p><p class="pen">The bottle is to your right · 1.2 m</p></div>'
+    +'<p class="psub" style="margin-top:auto">Rekognition DetectLabels + bounding-box direction (left / right / in front).</p>'; }},
+  read:{tab:3, body:function(){ return ''
+    +'<p class="pgreet" style="font-family:var(--f-s)">Read</p>'
+    +'<button class="pbtn pri">▤ Read the text in front of me · <span class="ara">اقرأ لي</span></button>'
+    +'<div class="pcard"><p class="plabel">Detected</p>'
+    +'<p class="parab">مخرج · الطابق الأول</p><p class="pen">EXIT · FIRST FLOOR</p></div>'
+    +'<p class="psub">Amazon Textract — signs, menus, labels, documents. Hold the text steady in front of the camera before tapping.</p>'
+    +'<div class="pwave" style="margin-top:auto"><i style="animation-delay:0s"></i><i style="animation-delay:.1s"></i><i style="animation-delay:.2s"></i><i style="animation-delay:.3s"></i><i style="animation-delay:.4s"></i><i style="animation-delay:.5s"></i><i style="animation-delay:.6s"></i></div>'
+    +'<p class="psub" style="text-align:center">Polly neural “Hala” speaking…</p>'; }},
+  settings:{tab:4, body:function(){ return ''
+    +'<p class="plabel">Trusted viewer <span style="color:#0FA78F">ON</span></p>'
+    +'<div class="ptoggle"><span class="pttl">Allow a trusted person to watch</span><button class="psw" aria-label="Trusted viewer"></button></div>'
+    +'<div class="pinput" style="font-family:var(--f-m);font-size:8px">https://main.d2t3tjeuucf48t.amplifyapp.com/vie…</div>'
+    +'<button class="pbtn sec">Copy link</button>'
+    +'<p class="psub">Off by default. Turning this on lets a linked guardian request a still frame and your current location — refreshed every few seconds, not full video. Nothing is shared until you explicitly Allow.</p>'
+    +'<p class="plabel" style="margin-top:4px">Voice commands</p>'
+    +'<div class="ptoggle"><span class="pttl">Control 3ayn by voice</span><button class="psw" aria-label="Voice commands"></button></div>'
+    +'<p class="parab" style="font-size:11px">الاستماع للأوامر مفعّل</p>'
+    +'<p class="psub">Say “<span class="ar">اسأل</span>” or “ask” to describe surroundings · “<span class="ar">اقرأ</span>” or “read” to read text · “<span class="ar">جد</span>” or “find” to search.</p>'; }},
+  consent1:{tab:0, body:function(){ return ''
+    +'<p class="pgreet"><span class="lat">أهلاً</span> carla</p>'
+    +'<div class="pcard"><p class="plabel">Link to a family member</p>'
+    +'<p class="psub" style="margin-bottom:6px">Paste the link they copied from Settings → Trusted Viewer, or enter the code.</p>'
+    +'<div class="pinput">Paste link or code · <span class="ar">الصق الرابط أو الرمز</span></div>'
+    +'<button class="pbtn sec">Link · <span class="ara">اربط</span></button></div>'
+    +'<p class="psub" style="margin-top:auto">Nothing is shared yet. Linking only establishes who is allowed to ask.</p>'; }},
+  consent2:{tab:0, body:function(){ return ''
+    +'<p class="pgreet"><span class="lat">أهلاً</span> carla</p>'
+    +'<div class="pcard"><p class="plabel">Camera access</p>'
+    +'<div style="background:#F4F1EA;border-radius:8px;padding:14px;text-align:center;margin:6px 0">'
+    +'<p class="psub" style="margin:0">Nothing shared yet · <span class="ar">لا شيء تمت مشاركته</span></p></div>'
+    +'<button class="pbtn no">▣ Request Camera Access</button></div>'
+    +'<div class="pcard"><p class="plabel">Location access</p>'
+    +'<button class="pbtn no" style="margin:0">⚑ Request Location Access</button></div>'
+    +'<p class="psub" style="margin-top:auto">The guardian is waiting. Requests appear on the user\'s phone and are read aloud.</p>'; }},
+  consent3:{tab:0, body:function(){ return ''
+    +'<p class="pgreet"><span class="lat">أهلاً</span> carla</p>'
+    +'<div class="pcard" style="border-color:#0FA78F;border-width:1.5px">'
+    +'<p class="plabel">Guardian request · <span class="ar">طلب</span></p>'
+    +'<p class="parab">وليّ أمرك يريد رؤية كاميرتك وموقعك</p>'
+    +'<p class="pen">Your guardian wants to see your camera and location</p>'
+    +'<button class="pbtn ok" style="margin-top:8px">ALLOW · <span class="ara">اسمح</span></button>'
+    +'<button class="pbtn no" style="margin:0">DENY · <span class="ara">ارفض</span></button></div>'
+    +'<div class="pcard"><p class="plabel">Last narration</p>'
+    +'<p class="parab">شخص يمد يده نحوك</p></div>'; }},
+  consent4:{tab:4, body:function(){ return ''
+    +'<p class="plabel">Location access</p>'
+    +'<div style="background:#F4F1EA;border-radius:8px;padding:16px;text-align:center;margin:6px 0">'
+    +'<p class="psub" style="margin:0">Nothing shared yet · <span class="ar">لا شيء تمت مشاركته</span></p></div>'
+    +'<button class="pbtn no">⚑ Request Location Access</button>'
+    +'<p class="psub">A request is read aloud on their phone. They choose to allow or deny it, and can stop sharing at any time.</p>'
+    +'<p style="font-size:9.5px;color:#0FA78F;text-decoration:underline;margin-top:6px">Unlink this family member</p>'
+    +'<p class="psub" style="margin-top:auto;font-family:var(--f-m);font-size:7.5px">main.d2t3tjeuucf48t.amplifyapp.com</p>'; }}
+};
+
+function renderPhone(el){
+  var key = el.dataset.phone, sc = SCREENS[key];
+  if(!sc) return;
+  var tabs = '<div class="ptabs">'+TABS.map(function(t,i){
+    return '<button class="ptab'+(i===sc.tab?" on":"")+'" data-t="'+t.toLowerCase()+'">'+t+'</button>';
+  }).join("")+'</div>';
+  var head = '<div class="phead"><span class="t">9:41 PM</span><span class="brand">عين <span style="letter-spacing:2px">···</span></span></div>';
+  el.innerHTML = tabs + head + '<div class="pbody">'+sc.body()+'</div>';
+  el.querySelectorAll(".plive canvas").forEach(drawLive);
+  el.querySelectorAll("[data-log]").forEach(startLog);
+  el.querySelectorAll(".psw").forEach(function(b){
+    b.addEventListener("click", function(){ b.classList.toggle("off"); });
+  });
+  if(el.dataset.tabs==="1"){
+    el.querySelectorAll(".ptab").forEach(function(b){
+      b.addEventListener("click", function(){
+        var t = b.dataset.t;
+        el.dataset.phone = (t==="home")?"home":t;
+        renderPhone(el);
+      });
+    });
+    el.querySelectorAll(".pq").forEach(function(q){
+      q.addEventListener("click", function(){
+        var t = q.textContent.trim().toLowerCase().replace(/[^a-z]/g,"");
+        if(SCREENS[t]){ el.dataset.phone=t; renderPhone(el); }
+      });
+    });
+  }
+}
+
+/* live view: an honest picture of what the device actually computes — a pose skeleton */
+function drawLive(cv){
+  /* size the bitmap to the element so the drawing is never stretched */
+  var box = cv.parentNode.getBoundingClientRect();
+  var W = Math.max(120, Math.round(box.width*2)), H = Math.max(80, Math.round(box.height*2));
+  cv.width = W; cv.height = H;
+  var ctx = cv.getContext("2d"), t=0;
+  var dark = cv.closest(".pscreen").classList.contains("dark");
+  function frame(){
+    if(!cv.isConnected) return;
+    t += 0.016;
+    var g = ctx.createLinearGradient(0,0,0,H);
+    if(dark){ g.addColorStop(0,"#0A0A00"); g.addColorStop(1,"#000"); }
+    else { g.addColorStop(0,"#1E3350"); g.addColorStop(1,"#0E1B2C"); }
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    var acc = dark ? "#FFD400" : "#2FD3B6";
+    /* ambient room bands */
+    ctx.globalAlpha=.12; ctx.fillStyle=acc;
+    for(var i=0;i<5;i++){ ctx.fillRect(0, (i*47 + (t*9)%47), W, 1); }
+    ctx.globalAlpha=1;
+    /* an approaching figure: pose landmarks walking toward the camera */
+    var walk = (Math.sin(t*0.62)+1)/2;              /* 0 far → 1 near */
+    var scale = 0.42 + walk*0.5;
+    var cx = W*0.5 + Math.sin(t*0.42)*W*0.09;
+    var cy = H*0.60;
+    var s = H*scale;
+    var sw = Math.sin(t*3.1);
+    function P(x,y){ return [cx + x*s, cy + y*s]; }
+    var head=P(0,-0.58), neck=P(0,-0.40), hip=P(0,0.02);
+    var sl=P(-0.17,-0.36), sr=P(0.17,-0.36);
+    var el_=P(-0.24,-0.16+sw*0.05), er=P(0.24,-0.16-sw*0.05);
+    var wl=P(-0.20,0.04+sw*0.09), wr=P(0.30,-0.06-sw*0.04);   /* right hand reaching */
+    var hl=P(-0.12,0.02), hr=P(0.12,0.02);
+    var kl=P(-0.14,0.28-sw*0.03), kr=P(0.14,0.28+sw*0.03);
+    var al=P(-0.15,0.52-sw*0.05), ar=P(0.15,0.52+sw*0.05);
+    ctx.strokeStyle=acc; ctx.lineWidth=Math.max(1.5, s*0.022); ctx.lineCap="round";
+    ctx.globalAlpha=.9;
+    [[neck,hip],[sl,sr],[sl,el_],[el_,wl],[sr,er],[er,wr],[hl,hr],[hip,hl],[hip,hr],
+     [hl,kl],[kl,al],[hr,kr],[kr,ar],[neck,head]].forEach(function(seg){
+      ctx.beginPath(); ctx.moveTo(seg[0][0],seg[0][1]); ctx.lineTo(seg[1][0],seg[1][1]); ctx.stroke();
+    });
+    ctx.beginPath(); ctx.arc(head[0],head[1], s*0.085, 0, Math.PI*2); ctx.stroke();
+    ctx.fillStyle=acc;
+    [head,neck,sl,sr,el_,er,wl,wr,hip,hl,hr,kl,kr,al,ar].forEach(function(p){
+      ctx.beginPath(); ctx.arc(p[0],p[1], Math.max(1.6,s*0.018),0,Math.PI*2); ctx.fill();
+    });
+    /* highlight the reaching wrist — the social cue the app is looking for */
+    ctx.globalAlpha=.35; ctx.beginPath();
+    ctx.arc(wr[0],wr[1], s*0.07*(1+Math.sin(t*4)*0.2),0,Math.PI*2); ctx.fill();
+    ctx.globalAlpha=1;
+    if(!RM) requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+/* streaming event log — the app logs the instant something happens */
+var LOGEV = [
+  ["9:41:57","شخص يقترب منك","Someone is approaching you"],
+  ["9:41:56","شخص أمامك","Someone is in front of you"],
+  ["9:41:53","شخص يمد يده نحوك","Someone is reaching out to you"],
+  ["9:41:44","شخص أمامك","Someone is in front of you"],
+  ["9:41:38","الطريق أمامك خالٍ","The path ahead is clear"]
+];
+function startLog(box){
+  var i=0;
+  function add(){
+    if(!box.isConnected) return;
+    var e = LOGEV[i % LOGEV.length]; i++;
+    var d = document.createElement("div");
+    d.className="ev";
+    d.innerHTML='<span class="tm">'+e[0]+'</span><span class="ar2">'+e[1]+'</span>';
+    box.insertBefore(d, box.firstChild);
+    while(box.children.length>4) box.removeChild(box.lastChild);
+  }
+  add(); add(); add();
+  if(!RM) setInterval(add, 2600);
+}
+document.querySelectorAll("[data-phone]").forEach(renderPhone);
+
+/* ═══════════════ ARCHITECTURE — animated request flow ═══════════════ */
+(function(){
+  var svg = document.getElementById("archsvg");
+  if(!svg) return;
+  var NS="http://www.w3.org/2000/svg";
+  function E(n,a){ var e=document.createElementNS(NS,n); for(var k in a) e.setAttribute(k,a[k]); return e; }
+  function txt(x,y,c,s){ var t=E("text",{x:x,y:y,class:c}); t.textContent=s; return t; }
+
+  var L=[["Camera + MediaPipe Pose","social-event heuristics"],
+         ["Social narration engine","“someone is approaching”"],
+         ["Obstacle alarm (reflex)","instant, no cloud round trip"],
+         ["Voice agent (wake word)","Web Speech API"],
+         ["PWA shell, Amplify Hosting","service worker, offline app shell"]];
+  var R=[["Bedrock (Nova 2 Lite)","AskHandler, scene description"],
+         ["Textract (DetectDocumentText)","ReadHandler, signs, menus, labels"],
+         ["Rekognition Labels","FindHandler, object direction"],
+         ["Rekognition Face Collections","WhoHandler / EnrollHandler"],
+         ["Polly, neural voice “Hala”","SpeakHandler, Arabic speech"],
+         ["DynamoDB, 3 tables","Profiles, Users, Watch (consent state)"],
+         ["Cognito, threeayn-users pool","sign-in optional, guests supported"]];
+
+  svg.appendChild(txt(12,26,"colttl","ON-DEVICE · BROWSER · INSTANT · NO NETWORK"));
+  svg.appendChild(txt(1010,26,"colttl","AWS CLOUD · 8 LAMBDA FUNCTIONS · JAVA 21"));
+
+  L.forEach(function(d,i){
+    var y = 46 + i*74;
+    svg.appendChild(E("rect",{x:12,y:y,width:388,height:62,rx:9,class:"nd"+(i<3?" hot":"")}));
+    svg.appendChild(txt(30,y+26,"nt",d[0]));
+    svg.appendChild(txt(30,y+45,"ns",d[1]));
+  });
+  R.forEach(function(d,i){
+    var y = 46 + i*54;
+    svg.appendChild(E("rect",{x:1012,y:y,width:396,height:44,rx:8,class:"nd"}));
+    svg.appendChild(txt(1028,y+19,"nt",d[0]));
+    svg.appendChild(txt(1028,y+35,"ns",d[1]));
+  });
+
+  /* arrowheads */
+  var defs=E("defs",{});
+  [["aUp","#0FA78F"],["aDn","#FF9900"]].forEach(function(a){
+    var mk=E("marker",{id:a[0],viewBox:"0 0 10 10",refX:"9",refY:"5",markerWidth:"6",
+      markerHeight:"6",orient:"auto-start-reverse"});
+    mk.appendChild(E("path",{d:"M0 0 L10 5 L0 10 z",fill:a[1]}));
+    defs.appendChild(mk);
+  });
+  svg.appendChild(defs);
+
+  /* full-span motion rails (invisible) — packets travel the whole journey */
+  svg.appendChild(E("path",{d:"M400 196 H1012", id:"wUp", fill:"none", stroke:"none"}));
+  svg.appendChild(E("path",{d:"M1012 258 H400", id:"wDn", fill:"none", stroke:"none"}));
+
+  /* visible segments, stroked with presentation attributes so nothing can override them */
+  [["M400 196 H600","#0FA78F","aUp"],["M812 196 H1010","#0FA78F","aUp"],
+   ["M1010 258 H812","#FF9900","aDn"],["M600 258 H402","#FF9900","aDn"]].forEach(function(w){
+    var p=E("path",{d:w[0],fill:"none",stroke:w[1],"stroke-width":"2","stroke-linecap":"round"});
+    p.setAttribute("marker-end","url(#"+w[2]+")");
+    svg.appendChild(p);
+  });
+  var t1=txt(404,184,"wlab","frame or question"); t1.setAttribute("fill","#0FA78F"); svg.appendChild(t1);
+  var t2=txt(404,278,"wlab","Arabic speech answer"); t2.setAttribute("fill","#FF9900");
+  t2.setAttribute("text-anchor","start"); svg.appendChild(t2);
+
+  /* gateway */
+  svg.appendChild(E("rect",{x:606,y:170,width:200,height:114,rx:11,class:"gw"}));
+  svg.appendChild(txt(706,198,"nt","API Gateway (REST)")).setAttribute("text-anchor","middle");
+  var eps=["/ask  /read  /find","/who  /enroll  /speak","/user  /watch"];
+  eps.forEach(function(s,i){
+    var t=txt(706,220+i*17,"ns",s); t.setAttribute("text-anchor","middle");
+    t.setAttribute("font-family","var(--f-m)"); svg.appendChild(t);
+  });
+
+  if(!RM){
+    [["wUp","#2FD3B6",0],["wUp","#2FD3B6",1.6],["wDn","#FF9900",0.8],["wDn","#FF9900",2.4]].forEach(function(p){
+      /* cx/cy must be 0 — animateMotion translates from the element's own origin */
+      var c=E("circle",{r:5,cx:0,cy:0,fill:p[1],opacity:0});
+      c.appendChild(E("animate",{attributeName:"opacity",from:"0",to:"1",
+        begin:p[2]+"s",dur:"0.01s",fill:"freeze"}));
+      var m=E("animateMotion",{dur:"3.2s",repeatCount:"indefinite",begin:p[2]+"s"});
+      var mp=E("mpath",{href:"#"+p[0]});
+      mp.setAttributeNS("http://www.w3.org/1999/xlink","href","#"+p[0]);
+      m.appendChild(mp);
+      c.appendChild(m); svg.appendChild(c);
+    });
+  }
+  var cap = txt(710,332,"ns","Latency-critical events never leave the browser.");
+  cap.setAttribute("text-anchor","middle"); cap.setAttribute("font-size","12");
+  cap.setAttribute("fill","var(--sight)"); svg.appendChild(cap);
+})();
+
+/* ═══════════════ PARTS LIST ═══════════════ */
+(function(){
+  var box = document.getElementById("partslist"); if(!box) return;
+  var P=[["1","Camera module, 8 MP rolling shutter, 78° HFOV, f/2.2","1"],
+    ["2","IR illuminator 940 nm + ambient light sensor","1"],
+    ["3","MEMS microphone port, ⌀1.8 mesh-sealed","4"],
+    ["4","Frame front, PA12, 4.0 rim section","1"],
+    ["5","Nose pad, silicone 40 Shore A, adjustable arm","2"],
+    ["6","Bridge, moulded integral, 13.0 span","1"],
+    ["7","Hinge, spring-loaded stainless, 105° travel","2"],
+    ["8","Main board — SoC, BLE 5.3, camera ISP","1"],
+    ["9","Power / mode button, raised 0.8 profile","1"],
+    ["10","USB-C receptacle, gasketed, 15 W","1"],
+    ["11","Bone-conduction transducer, 28 × 12","2"],
+    ["12","Capacitive touch strip, 40 long, ribbed datum","1"],
+    ["13","Li-Po cell 3.7 V 210 mAh","1"],
+    ["14","Battery management + fuel gauge board","1"],
+    ["15","Transducer carrier, spring against mastoid","2"],
+    ["16","BLE antenna, laser-direct-structured","1"],
+    ["17","Charge contacts, 4-way gold pogo (dock)","1"]];
+  box.innerHTML = '<div class="part phdr" style="border-bottom-width:1.5px;border-color:var(--amber)">'
+    +'<span class="no" style="color:var(--tx-3)">NO</span>'
+    +'<span class="de" style="font-family:var(--f-m);font-size:9.5px;letter-spacing:.14em;color:var(--tx-3)">DESCRIPTION</span>'
+    +'<span class="qt">QTY</span></div>'
+    + P.map(function(p){
+      return '<div class="part" data-p="'+p[0]+'"><span class="no">'+p[0]+'</span>'
+        +'<span class="de">'+p[1]+'</span><span class="qt">'+p[2]+'</span></div>';
+    }).join("");
+  /* hovering a callout on the drawing highlights its row, and the reverse */
+  function link(no,on){
+    document.querySelectorAll('.part[data-p="'+no+'"]').forEach(function(r){
+      r.style.background = on?"var(--panel-2)":"";
+      r.querySelector(".de").style.color = on?"var(--amber)":"";
+    });
+    document.querySelectorAll('.callout[data-part="'+no+'"] circle').forEach(function(c){
+      c.setAttribute("stroke-width", on?"2.4":"1");
+    });
+  }
+  document.querySelectorAll(".callout[data-part]").forEach(function(g){
+    var no=g.dataset.part;
+    g.style.cursor="pointer";
+    g.addEventListener("mouseenter",function(){ link(no,true); });
+    g.addEventListener("mouseleave",function(){ link(no,false); });
+  });
+  box.querySelectorAll(".part[data-p]").forEach(function(r){
+    r.addEventListener("mouseenter",function(){ link(r.dataset.p,true); });
+    r.addEventListener("mouseleave",function(){ link(r.dataset.p,false); });
+  });
+})();
+
+/* ═══════════════ CONSENT STEPPER ═══════════════ */
+(function(){
+  var wrap=document.getElementById("csteps"); if(!wrap) return;
+  var S=[
+    ["1","Guardian links with a code","consent1",
+     "The guardian pastes a link the blind user generated, or types a short code. This step establishes identity only — it grants nothing. No camera, no location, no history."],
+    ["2","Guardian requests, then waits","consent2",
+     "The guardian asks for camera or location. The request sits pending. Notice what the guardian sees while waiting: “Nothing shared yet.” There is no silent path from here to a camera feed."],
+    ["3","The blind user decides","consent3",
+     "The request is read aloud on the user's phone in Arabic — <span class='ar'>وليّ أمرك يريد رؤية كاميرتك وموقعك</span> — with two large targets: ALLOW or DENY. This is the only door, and only the user opens it."],
+    ["4","Revocable, any time","consent4",
+     "Sharing sends still frames refreshed every few seconds, never continuous video. The user can stop sharing or unlink the family member instantly, without a password and without help."]
+  ];
+  var body=document.getElementById("cbody"), phone=document.getElementById("cphone"), cap=document.getElementById("ccap");
+  wrap.innerHTML = S.map(function(s,i){
+    return '<button class="step'+(i===0?" on":"")+'" data-i="'+i+'"><span class="i">'+s[0]+'</span>'+s[1]+'</button>';
+  }).join("");
+  function set(i){
+    wrap.querySelectorAll(".step").forEach(function(b,j){ b.classList.toggle("on", j===i); });
+    body.innerHTML = '<p class="eyebrow" style="margin-bottom:9px">Step '+S[i][0]+' of 4</p>'
+      +'<p style="margin:0;font-size:16px;line-height:1.6;color:var(--tx-2)">'+S[i][3]+'</p>';
+    phone.dataset.phone = S[i][2]; renderPhone(phone);
+    cap.textContent = S[i][1];
+  }
+  wrap.querySelectorAll(".step").forEach(function(b){
+    b.addEventListener("click", function(){ set(parseInt(b.dataset.i,10)); });
+  });
+  set(0);
+})();
+
+/* ═══════════════ LIVE CONTRAST METER — computed, not typed ═══════════════ */
+function hexToRgb(c){
+  c=c.trim();
+  if(c[0]==="#"){ if(c.length===4) c="#"+c[1]+c[1]+c[2]+c[2]+c[3]+c[3];
+    return [parseInt(c.substr(1,2),16),parseInt(c.substr(3,2),16),parseInt(c.substr(5,2),16)]; }
+  var m=c.match(/rgba?\(([^)]+)\)/); if(m){ var p=m[1].split(","); return [+p[0],+p[1],+p[2]]; }
+  return [0,0,0];
+}
+function lum(rgb){
+  var a=rgb.map(function(v){ v/=255; return v<=0.03928? v/12.92 : Math.pow((v+0.055)/1.055,2.4); });
+  return 0.2126*a[0]+0.7152*a[1]+0.0722*a[2];
+}
+function ratio(f,b){ var L1=lum(hexToRgb(f)),L2=lum(hexToRgb(b));
+  var hi=Math.max(L1,L2),lo=Math.min(L1,L2); return (hi+0.05)/(lo+0.05); }
+
+var CPAIRS=[
+  ["Body text on the stage","--tx","--stage"],
+  ["Secondary text on a panel","--tx-2","--panel"],
+  ["Amazon orange accent on stage","--amber","--stage"],
+  ["3ayn teal on a panel","--sight-lift","--panel"],
+  ["Muted caption on the stage","--tx-3","--stage"]
+];
+function renderContrast(){
+  var box=document.getElementById("cmeter"); if(!box) return;
+  var cs=getComputedStyle(document.documentElement);
+  box.innerHTML = CPAIRS.map(function(p){
+    var f=cs.getPropertyValue(p[1]), b=cs.getPropertyValue(p[2]);
+    var r=ratio(f,b), ok=r>=4.5;
+    return '<div class="crow"><span class="sw"><i style="background:'+b.trim()+';border-color:'+f.trim()+'"></i>'+p[0]+'</span>'
+      +'<span class="ratio">'+r.toFixed(2)+':1</span>'
+      +'<span class="verdict '+(ok?"ok":"no")+'">'+(ok?(r>=7?"AAA":"AA"):"BELOW AA")+'</span></div>';
+  }).join("");
+}
+renderContrast();
+
+/* ═══════════════ COST CHART — stacked, validated palette ═══════════════ */
+(function(){
+  var svg=document.getElementById("costchart"); if(!svg) return;
+  var NS="http://www.w3.org/2000/svg";
+  function E(n,a){ var e=document.createElementNS(NS,n); for(var k in a) e.setAttribute(k,a[k]); return e; }
+  function T(x,y,c,s,anc){ var t=E("text",{x:x,y:y,class:c}); if(anc)t.setAttribute("text-anchor",anc);
+    t.textContent=s; return t; }
+  var D=[["Ask",2.86,.78],["Read",4.70,.68],["Find",2.60,.62],["Who",2.60,.62]];
+  var C1="#CC7A0A", C2="#0FA78F";        /* validated: lightness, chroma, CVD, contrast all PASS */
+  var x0=46,x1=452,y0=22,y1=206,MAX=5;
+  function Y(v){ return y1 - (v/MAX)*(y1-y0); }
+  for(var g=0;g<=5;g++){
+    svg.appendChild(E("line",{x1:x0,x2:x1,y1:Y(g),y2:Y(g),class:"grid"}));
+    svg.appendChild(T(x0-9,Y(g)+4,"axlab","$"+g,"end"));
+  }
+  var slot=(x1-x0)/D.length, bw=54;
+  D.forEach(function(d,i){
+    var cx=x0+slot*(i+.5), bx=cx-bw/2;
+    var sp=d[1]*d[2], vi=d[1]-sp;
+    /* vision segment, anchored to the baseline */
+    svg.appendChild(E("rect",{x:bx,y:Y(vi),width:bw,height:y1-Y(vi),fill:C1}));
+    /* 2px surface gap, then the speech segment with a 4px rounded data-end */
+    var topH=(y1-Y(d[1]))-(y1-Y(vi))-2;
+    svg.appendChild(E("rect",{x:bx,y:Y(d[1]),width:bw,height:Math.max(0,topH),fill:C2,rx:4}));
+    svg.appendChild(E("rect",{x:bx,y:Y(d[1])+Math.max(0,topH)-6,width:bw,height:6,fill:C2}));
+    svg.appendChild(T(cx,Y(d[1])-16,"vlab","$"+d[1].toFixed(2),"middle"));
+    svg.appendChild(T(cx,Y(d[1])-4,"slab",Math.round(d[2]*100)+"% speech","middle"));
+    svg.appendChild(T(cx,y1+19,"axlab",d[0],"middle"));
+  });
+  svg.appendChild(E("line",{x1:x0,x2:x1,y1:y1,y2:y1,stroke:"var(--line)","stroke-width":1.5}));
+  svg.appendChild(T(x0,y1+44,"slab","Read costs most because it speaks the most — a whole sign, read out."));
+})();
+
+/* ═══════════════ COMPETITIVE MATRIX ═══════════════ */
+(function(){
+  var m=document.getElementById("matrix"); if(!m) return;
+  var P=[
+    {x:19,y:23,n:"3ayn",us:true},
+    {x:15,y:73,n:"Be My Eyes,<br>Seeing AI"},
+    {x:44,y:80,n:"Ally Solos,<br>Meta Ray-Ban"},
+    {x:78,y:84,n:"OrCam, eSight,<br>Envision"}
+  ];
+  var h='<div class="mx-mid" style="left:50%;top:0;bottom:0;width:1px"></div>'
+       +'<div class="mx-mid" style="top:50%;left:0;right:0;height:1px"></div>';
+  P.forEach(function(p){
+    h+='<div class="mpt'+(p.us?" us":"")+'" style="left:'+p.x+'%;top:'+p.y+'%">'
+      +'<span class="d"></span><span class="n">'+p.n+'</span></div>';
+  });
+  h+='<span class="mxax" style="left:-22px;top:46%;transform:rotate(-90deg) translateX(0);transform-origin:left top;white-space:nowrap">Arabic-first, guardian</span>'
+   +'<span class="mxax" style="left:-22px;top:99%;transform:rotate(-90deg);transform-origin:left top;white-space:nowrap">Generic, English-first</span>'
+   +'<span class="mxax" style="left:2px;bottom:-24px">Free</span>'
+   +'<span class="mxax" style="right:2px;bottom:-24px">Expensive</span>';
+  m.innerHTML=h;
+})();
+
+/* boot */
+go(0, true);
+})();
+</script>
+<script>
+/* Mark Arabic runs for screen readers and correct shaping.
+   On an accessibility pitch, the page itself should get this right. */
+document.querySelectorAll(".ar,.parab,.ar2,.ara,.pgreet").forEach(function(el){
+  el.setAttribute("lang","ar"); el.setAttribute("dir","rtl");
+});
+</script>
+</body>
+</html>
