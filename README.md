@@ -504,5 +504,7 @@ guessing.
 Built by **Team 8**, Amazon Industry Program 2026, IEEE Women in Engineering, AUB.
 
 Frontend and app architecture, voice commands: **Carla**.
+Voice Commands and Business ended research: **Mary Abou Rjayle**
+Design, UI, UX, Guardian ended integration, AWS services implementation and machine learning: **Marita Gereige**
 Live location and wake lock: **William**.
 Backend, accessibility system, consent architecture, deployment, prototypes: **Hadi**.
